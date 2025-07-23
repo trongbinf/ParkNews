@@ -1,0 +1,10 @@
+<!-- Show header only for non-admin routes -->
+<app-header *ngIf="!isAdminRoute"></app-header>
+
+<!-- Main content -->
+<main [ngClass]="{'main-content': !isAdminRoute, 'admin-content': isAdminRoute}">
+  <router-outlet></router-outlet>
+</main>
+
+<!-- Show footer only for non-admin routes -->
+<app-footer *ngIf="!isAdminRoute"></app-footer>

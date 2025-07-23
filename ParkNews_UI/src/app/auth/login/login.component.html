@@ -1,0 +1,54 @@
+<div class="login-container">
+  <div class="login-card">
+    <h2 class="login-title">Đăng nhập</h2>
+    
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input 
+          type="email" 
+          class="form-control" 
+          id="email" 
+          name="email"
+          [(ngModel)]="loginData.email"
+          required
+          email
+          #email="ngModel">
+        <div *ngIf="email.invalid && (email.dirty || email.touched)" class="error-message">
+          <div *ngIf="email.errors?.['required']">Email là bắt buộc</div>
+          <div *ngIf="email.errors?.['email']">Email không hợp lệ</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mật khẩu</label>
+        <input 
+          type="password" 
+          class="form-control" 
+          id="password" 
+          name="password"
+          [(ngModel)]="loginData.password"
+          required
+          minlength="6"
+          #password="ngModel">
+        <div *ngIf="password.invalid && (password.dirty || password.touched)" class="error-message">
+          <div *ngIf="password.errors?.['required']">Mật khẩu là bắt buộc</div>
+          <div *ngIf="password.errors?.['minlength']">Mật khẩu phải có ít nhất 6 ký tự</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="loading || !loginForm.valid">
+          <span *ngIf="loading"><i class="fas fa-spinner fa-spin"></i></span>
+          {{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}}
+        </button>
+      </div>
+
+      <div class="form-links">
+        <a [routerLink]="['/auth/forgot-password']">Quên mật khẩu?</a>
+        <span class="divider">|</span>
+        <a [routerLink]="['/auth/register']">Đăng ký tài khoản mới</a>
+      </div>
+    </form>
+  </div>
+</div> 

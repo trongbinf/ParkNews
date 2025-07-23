@@ -1,0 +1,229 @@
+<div class="article-manager">
+  <div class="page-header">
+    <button class="btn btn-secondary" [routerLink]="['/admin/dashboard']">
+      <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+    </button>
+    <h1 class="page-title">Quản lý người dùng</h1>
+  </div>
+  
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Tìm kiếm người dùng..." (ngModelChange)="search()" class="form-control">
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fas fa-plus"></i> Thêm người dùng mới
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+  </div>
+
+  <table *ngIf="!loading && users.length > 0" class="user-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Email</th>
+        <th>Họ tên</th>
+        <th>Vai trò</th>
+        <th>Trạng thái</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of users | slice: (currentPage-1) * pageSize : currentPage * pageSize">
+        <td>{{user.Id}}</td>
+        <td>{{user.Email}}</td>
+        <td>{{user.FirstName || ''}} {{user.LastName || ''}}</td>
+        <td>
+          <span *ngIf="user.Role">{{user.Role}}</span>
+          <span *ngIf="user.Roles && user.Roles.length > 0">
+            <span *ngFor="let role of user.Roles; let last = last">
+              {{role}}{{!last ? ', ' : ''}}
+            </span>
+          </span>
+        </td>
+        <td>
+          <div class="status-toggle">
+            <button 
+              [ngClass]="user.IsActive ? 'btn-success' : 'btn-danger'" 
+              class="btn btn-sm"
+              (click)="toggleUserStatus(user)"
+              [disabled]="saving">
+              <i [ngClass]="user.IsActive ? 'fa-check-circle' : 'fa-times-circle'" class="fas"></i>
+              <span>{{user.IsActive ? 'Đang hoạt động' : 'Đã khóa'}}</span>
+            </button>
+          </div>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-primary btn-sm" (click)="openModal(user)" title="Sửa">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-info btn-sm" (click)="openPasswordModal(user)" title="Đổi mật khẩu">
+              <i class="fas fa-key"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="confirmDelete(user.Id!)" title="Xóa">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && users.length === 0" class="no-data">
+    <p>Không có người dùng nào.</p>
+  </div>
+
+  <div class="pagination" *ngIf="users.length > pageSize">
+    <button class="btn btn-outline-primary" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span>Trang {{currentPage}} / {{totalPages}}</span>
+    <button class="btn btn-outline-primary" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" [class.show]="showModal" *ngIf="showModal">
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{editData.Id ? 'Sửa người dùng' : 'Thêm người dùng mới'}}</h5>
+        <button type="button" class="close" (click)="closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #form="ngForm">
+          <div class="form-group">
+            <label for="email">Email <span class="required">*</span></label>
+            <input type="email" class="form-control" id="email" name="email" [(ngModel)]="editData.Email" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="firstName">Họ</label>
+              <input type="text" class="form-control" id="firstName" name="firstName" [(ngModel)]="editData.FirstName">
+            </div>
+            <div class="form-group col-md-6">
+              <label for="lastName">Tên</label>
+              <input type="text" class="form-control" id="lastName" name="lastName" [(ngModel)]="editData.LastName">
+            </div>
+          </div>
+          <div class="form-group" *ngIf="!editData.Id">
+            <label for="password">Mật khẩu <span class="required">*</span></label>
+            <input type="password" class="form-control" id="password" name="password" [(ngModel)]="editData.Password" required>
+          </div>
+          <div class="form-group">
+            <label>Vai trò</label>
+            <div class="role-checkboxes">
+              <div class="form-check" *ngFor="let role of roles">
+                <input 
+                  class="form-check-input" 
+                  type="checkbox" 
+                  [id]="'role_' + role" 
+                  [name]="'role_' + role"
+                  [checked]="editData.Roles && editData.Roles.includes(role)"
+                  (change)="toggleRole(role)">
+                <label class="form-check-label" [for]="'role_' + role">
+                  {{role}}
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-check" *ngIf="editData.Id">
+            <input class="form-check-input" type="checkbox" id="isActive" name="isActive" [(ngModel)]="editData.IsActive">
+            <label class="form-check-label" for="isActive">
+              Tài khoản đang hoạt động
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Hủy</button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              [disabled]="saving || !form.valid" 
+              (click)="saveItem()"
+            >
+              <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+              {{editData.Id ? 'Cập nhật' : 'Thêm mới'}}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Password Modal -->
+<div class="modal" [class.show]="showPasswordModal" *ngIf="showPasswordModal">
+  <div class="modal-backdrop" (click)="closePasswordModal()"></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Đổi mật khẩu</h5>
+        <button type="button" class="close" (click)="closePasswordModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #passwordForm="ngForm">
+          <div class="form-group">
+            <label for="newPassword">Mật khẩu mới <span class="required">*</span></label>
+            <input type="password" class="form-control" id="newPassword" name="newPassword" [(ngModel)]="passwordData.newPassword" required>
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">Xác nhận mật khẩu <span class="required">*</span></label>
+            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" [(ngModel)]="passwordData.confirmPassword" required>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="closePasswordModal()">Hủy</button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              [disabled]="saving || !passwordForm.valid || passwordData.newPassword !== passwordData.confirmPassword" 
+              (click)="changePassword()"
+            >
+              <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+              Đổi mật khẩu
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal" [class.show]="showDeleteModal" *ngIf="showDeleteModal">
+  <div class="modal-backdrop" (click)="cancelDelete()"></div>
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Xác nhận xóa</h5>
+        <button type="button" class="close" (click)="cancelDelete()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn xóa người dùng này không?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Hủy</button>
+        <button 
+          type="button" 
+          class="btn btn-danger" 
+          [disabled]="saving" 
+          (click)="deleteItem()"
+        >
+          <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+          Xóa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

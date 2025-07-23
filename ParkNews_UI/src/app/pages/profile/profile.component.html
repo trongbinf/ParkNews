@@ -1,0 +1,142 @@
+<div class="profile-container">
+  <div class="profile-header">
+    <h1>Hồ sơ người dùng</h1>
+  </div>
+
+  <div class="profile-content">
+    <div class="loading-spinner" *ngIf="loading">
+      <i class="fas fa-spinner fa-spin"></i> Đang tải...
+    </div>
+
+    <div class="profile-tabs" *ngIf="!loading">
+      <button class="tab-button" [class.active]="activeTab === 'info'" (click)="setActiveTab('info')">
+        <i class="fas fa-user"></i> Thông tin cá nhân
+      </button>
+      <button class="tab-button" [class.active]="activeTab === 'password'" (click)="setActiveTab('password')">
+        <i class="fas fa-key"></i> Đổi mật khẩu
+      </button>
+    </div>
+
+    <!-- Thông tin cá nhân -->
+    <div class="profile-tab-content" *ngIf="!loading && activeTab === 'info'">
+      <form (ngSubmit)="updateProfile()" #profileForm="ngForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            [(ngModel)]="userProfile.Email" 
+            class="form-control" 
+            disabled
+          >
+          <small class="form-text text-muted">Email không thể thay đổi</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="firstName">Họ</label>
+            <input 
+              type="text" 
+              id="firstName" 
+              name="firstName" 
+              [(ngModel)]="userProfile.FirstName" 
+              class="form-control" 
+              required
+            >
+          </div>
+          <div class="form-group col-md-6">
+            <label for="lastName">Tên</label>
+            <input 
+              type="text" 
+              id="lastName" 
+              name="lastName" 
+              [(ngModel)]="userProfile.LastName" 
+              class="form-control" 
+              required
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="phoneNumber">Số điện thoại</label>
+          <input 
+            type="tel" 
+            id="phoneNumber" 
+            name="phoneNumber" 
+            [(ngModel)]="userProfile.PhoneNumber" 
+            class="form-control"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="address">Địa chỉ</label>
+          <textarea 
+            id="address" 
+            name="address" 
+            [(ngModel)]="userProfile.Address" 
+            class="form-control" 
+            rows="3"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="saving || !profileForm.valid">
+            <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+            Cập nhật thông tin
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Đổi mật khẩu -->
+    <div class="profile-tab-content" *ngIf="!loading && activeTab === 'password'">
+      <form (ngSubmit)="changePassword()" #passwordForm="ngForm">
+        <div class="form-group">
+          <label for="currentPassword">Mật khẩu hiện tại</label>
+          <input 
+            type="password" 
+            id="currentPassword" 
+            name="currentPassword" 
+            [(ngModel)]="passwordData.currentPassword" 
+            class="form-control" 
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="newPassword">Mật khẩu mới</label>
+          <input 
+            type="password" 
+            id="newPassword" 
+            name="newPassword" 
+            [(ngModel)]="passwordData.newPassword" 
+            class="form-control" 
+            required
+            minlength="6"
+          >
+          <small class="form-text text-muted">Mật khẩu phải có ít nhất 6 ký tự</small>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Xác nhận mật khẩu mới</label>
+          <input 
+            type="password" 
+            id="confirmPassword" 
+            name="confirmPassword" 
+            [(ngModel)]="passwordData.confirmPassword" 
+            class="form-control" 
+            required
+          >
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="saving || !passwordForm.valid">
+            <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+            Đổi mật khẩu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+<header class="header">
+  <div class="container">
+    <div class="header-content">
+      <div class="logo">
+        <a [routerLink]="['/']">ParkNews</a>
+      </div>
+      <nav class="nav-menu">
+        <ul>
+          <li><a [routerLink]="['/']">Trang chủ</a></li>
+          <li><a [routerLink]="['/categories']">Danh mục</a></li>
+          <li><a [routerLink]="['/tags']">Thẻ</a></li>
+          <li><a [routerLink]="['/about']">Giới thiệu</a></li>
+          <li><a [routerLink]="['/contact']">Liên hệ</a></li>
+        </ul>
+      </nav>
+      <div class="auth-buttons">
+        <a [routerLink]="['/auth/login']" class="btn btn-outline-primary">Đăng nhập</a>
+        <a [routerLink]="['/auth/register']" class="btn btn-primary">Đăng ký</a>
+      </div>
+    </div>
+  </div>
+</header> 

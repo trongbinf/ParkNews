@@ -1,0 +1,52 @@
+<div class="admin-dashboard">
+  <header class="dashboard-header">
+    <div class="dashboard-logo">
+      <h1>PARK NEWS</h1>
+      <p>Admin Dashboard</p>
+    </div>
+    <div class="dashboard-user">
+      <span *ngIf="currentUser">Xin chào, {{ getUserDisplayName() }}</span>
+      <button class="logout-btn" (click)="logout()">Đăng xuất</button>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <ul>
+          <li><a routerLink="/admin/dashboard" routerLinkActive="active">Tổng quan</a></li>
+          <li *ngFor="let section of adminSections">
+            <a [routerLink]="section.route" routerLinkActive="active">
+              <i class="fas {{section.icon}}"></i> {{section.name}}
+            </a>
+          </li>
+          <li><a routerLink="/" class="back-to-site">Quay lại trang chủ</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <div class="dashboard-welcome">
+        <h2>Chào mừng đến với trang quản trị</h2>
+        <p>Sử dụng menu bên trái để điều hướng đến các tính năng quản trị khác nhau.</p>
+      </div>
+
+      <div class="dashboard-stats">
+        <div class="stat-card" *ngFor="let section of adminSections" (click)="navigateTo(section.route)">
+          <div class="stat-icon">
+            <i class="fas {{section.icon}}"></i>
+          </div>
+          <h3>{{section.name}}</h3>
+          <p class="stat-number">0</p>
+        </div>
+      </div>
+
+      <div class="dashboard-recent">
+        <h3>Hoạt động gần đây</h3>
+        <div class="empty-state">
+          <p>Chưa có hoạt động nào được ghi nhận.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>

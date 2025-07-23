@@ -1,0 +1,182 @@
+<div class="article-manager">
+  <div class="page-header">
+    <button class="btn btn-secondary" [routerLink]="['/admin/dashboard']">
+      <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+    </button>
+    <h1 class="page-title">Quản lý tác giả</h1>
+  </div>
+  
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Tìm kiếm tác giả..." (ngModelChange)="search()" class="form-control">
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fas fa-plus"></i> Thêm tác giả mới
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+  </div>
+
+  <table *ngIf="!loading && authors.length > 0" class="author-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Ảnh đại diện</th>
+        <th>Họ tên</th>
+        <th>Email</th>
+        <th>Tiểu sử</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let author of authors | slice: (currentPage-1) * pageSize : currentPage * pageSize">
+        <td>{{ author.Id }}</td>
+        <td>
+          <div class="avatar-preview">
+            <img *ngIf="author.AvatarUrl" [src]="author.AvatarUrl" alt="{{ author.FullName }}" class="author-avatar" />
+            <span *ngIf="!author.AvatarUrl" class="no-avatar">
+              <i class="fas fa-user"></i>
+            </span>
+          </div>
+        </td>
+        <td>{{ author.FullName }}</td>
+        <td>{{ author.Email }}</td>
+        <td class="bio-content">{{ author.Bio || 'Không có thông tin' }}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-primary btn-sm" (click)="openModal(author)" title="Sửa">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="confirmDelete(author.Id || 0)" title="Xóa">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && authors.length === 0" class="no-data">
+    <p>Không có tác giả nào.</p>
+  </div>
+
+  <div class="pagination" *ngIf="authors.length > pageSize">
+    <button class="btn btn-outline-primary" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span>Trang {{currentPage}} / {{totalPages}}</span>
+    <button class="btn btn-outline-primary" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" [class.show]="showModal" *ngIf="showModal">
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{editData.Id ? 'Sửa tác giả' : 'Thêm tác giả mới'}}</h5>
+        <button type="button" class="close" (click)="closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #form="ngForm">
+          <div class="form-group">
+            <label for="fullName">Họ tên <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="fullName" 
+              name="fullName" 
+              [(ngModel)]="editData.FullName" 
+              class="form-control" 
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="email">Email <span class="required">*</span></label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              [(ngModel)]="editData.Email" 
+              class="form-control" 
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="bio">Tiểu sử</label>
+            <textarea 
+              id="bio" 
+              name="bio" 
+              [(ngModel)]="editData.Bio" 
+              class="form-control" 
+              rows="4"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="avatarUrl">URL ảnh đại diện</label>
+            <input 
+              type="url" 
+              id="avatarUrl" 
+              name="avatarUrl" 
+              [(ngModel)]="editData.AvatarUrl" 
+              class="form-control"
+            />
+            <small class="form-text text-muted">URL ảnh đại diện của tác giả (tùy chọn)</small>
+          </div>
+          <div *ngIf="editData.AvatarUrl" class="avatar-preview">
+            <img [src]="editData.AvatarUrl" alt="Avatar preview" />
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Hủy</button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              [disabled]="saving || !form.valid" 
+              (click)="saveItem()"
+            >
+              <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+              {{editData.Id ? 'Cập nhật' : 'Thêm mới'}}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal" [class.show]="showDeleteModal" *ngIf="showDeleteModal">
+  <div class="modal-backdrop" (click)="cancelDelete()"></div>
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Xác nhận xóa</h5>
+        <button type="button" class="close" (click)="cancelDelete()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn xóa tác giả này không?</p>
+        <p class="text-danger"><small>Lưu ý: Bạn không thể xóa tác giả đã có bài viết.</small></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Hủy</button>
+        <button 
+          type="button" 
+          class="btn btn-danger" 
+          [disabled]="saving" 
+          (click)="deleteItem()"
+        >
+          <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+          Xóa
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 

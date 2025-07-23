@@ -1,0 +1,204 @@
+<div class="article-manager">
+  <div class="page-header">
+    <button class="btn btn-secondary" [routerLink]="['/admin/dashboard']">
+      <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+    </button>
+  <h1 class="page-title">Quản lý bài viết</h1>
+  </div>
+  
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" [(ngModel)]="searchText" placeholder="Tìm kiếm bài viết..." (ngModelChange)="search()" class="form-control">
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fas fa-plus"></i> Thêm bài viết mới
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+  </div>
+
+  <table *ngIf="!loading && articles.length > 0" class="article-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tiêu đề</th>
+        <th>Danh mục</th>
+        <th>Tác giả</th>
+        <th>Ngày xuất bản</th>
+        <th>Nổi bật</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let article of articles">
+        <td>{{article.Id}}</td>
+        <td>
+        <div class="article-title">
+            <div class="image-preview" *ngIf="article.FeaturedImageUrl">
+              <img [src]="article.FeaturedImageUrl" alt="Thumbnail">
+          </div>
+          <div>
+              <div class="title">{{article.Title || 'Không có tiêu đề'}}</div>
+              <div class="slug text-muted">{{article.Slug || ''}}</div>
+            </div>
+          </div>
+        </td>
+        <td>{{article.Category?.Name || 'N/A'}}</td>
+        <td>{{article.Author?.FullName || 'N/A'}}</td>
+        <td>{{article.PublishDate ? (article.PublishDate | date:'dd/MM/yyyy HH:mm') : 'N/A'}}</td>
+        <td>
+          <span class="badge" [class.featured]="article.IsFeatured">
+            {{article.IsFeatured ? 'Có' : 'Không'}}
+        </span>
+        </td>
+        <td>
+        <div class="action-buttons">
+            <button class="btn btn-primary btn-sm" (click)="openModal(article)" title="Sửa">
+            <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-info btn-sm" [routerLink]="['/admin/articles', article.Id]" title="Xem">
+            <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="deleteArticle(article.Id)" title="Xóa">
+            <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && articles.length === 0" class="no-data">
+    <p>Không có bài viết nào.</p>
+        </div>
+
+  <div class="pagination" *ngIf="articles.length > 0">
+    <button class="btn btn-outline-primary" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span>Trang {{currentPage}} / {{totalPages}}</span>
+    <button class="btn btn-outline-primary" [disabled]="currentPage === totalPages" (click)="changePage(currentPage + 1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" [class.show]="showModal" *ngIf="showModal">
+  <div class="modal-backdrop" (click)="showModal=false"></div>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{editData.Id ? 'Sửa bài viết' : 'Thêm bài viết mới'}}</h5>
+        <button type="button" class="close" (click)="showModal=false">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #form="ngForm" (ngSubmit)="saveArticle(form)">
+    <div class="form-row">
+      <div class="form-group col-12">
+              <label for="title">Tiêu đề <span class="required">*</span></label>
+              <input type="text" class="form-control" id="title" name="Title" [(ngModel)]="editData.Title" required>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-6">
+              <label for="categoryId">Danh mục <span class="required">*</span></label>
+              <select id="categoryId" name="CategoryId" [(ngModel)]="editData.CategoryId" class="form-control" required>
+          <option [ngValue]="null" disabled>-- Chọn danh mục --</option>
+                <option *ngFor="let category of categories" [ngValue]="category.Id">{{category.Name}}</option>
+        </select>
+      </div>
+      <div class="form-group col-6">
+              <label for="authorId">Tác giả</label>
+              <select id="authorId" name="AuthorId" [(ngModel)]="editData.AuthorId" class="form-control">
+          <option [ngValue]="null">-- Không có tác giả --</option>
+                <option *ngFor="let author of authors" [ngValue]="author.Id">{{author.FullName}}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-12">
+              <label for="summary">Tóm tắt</label>
+              <textarea id="summary" name="Summary" [(ngModel)]="editData.Summary" class="form-control" rows="3"></textarea>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-12">
+              <label for="content">Nội dung <span class="required">*</span></label>
+              <quill-editor 
+                id="content" 
+                name="Content" 
+                [(ngModel)]="editData.Content" 
+                [modules]="quillConfig" 
+                [styles]="{ height: '300px' }"
+                [required]="true">
+              </quill-editor>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-8">
+              <label for="featuredImageUrl">URL ảnh đại diện</label>
+              <input type="text" id="featuredImageUrl" name="FeaturedImageUrl" [(ngModel)]="editData.FeaturedImageUrl" class="form-control">
+      </div>
+      <div class="form-group col-4">
+        <div class="image-preview-container">
+          <label>Xem trước ảnh</label>
+                <div class="image-preview" *ngIf="editData.FeaturedImageUrl">
+                  <img [src]="editData.FeaturedImageUrl" alt="Preview">
+          </div>
+                <div class="no-image" *ngIf="!editData.FeaturedImageUrl">
+            <i class="fas fa-image"></i>
+            <span>Không có ảnh</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col-6">
+        <label>Thẻ</label>
+        <div class="tag-input">
+                <div class="input-group">
+                  <input type="text" [(ngModel)]="newTag" name="newTag" placeholder="Nhập thẻ" class="form-control">
+                  <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-primary" (click)="addTag()">Thêm</button>
+                  </div>
+                </div>
+        </div>
+        <div class="tag-list" *ngIf="editData.tags && editData.tags.length > 0">
+          <span class="tag" *ngFor="let tag of editData.tags; let i = index">
+            {{tag}}
+            <i class="fas fa-times" (click)="removeTag(i)"></i>
+          </span>
+        </div>
+      </div>
+      <div class="form-group col-6">
+        <div class="checkbox-group">
+          <div class="form-check">
+                  <input type="checkbox" name="IsFeatured" [(ngModel)]="editData.IsFeatured" id="isFeatured" class="form-check-input">
+            <label for="isFeatured" class="form-check-label">Bài viết nổi bật</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="showModal=false">Hủy</button>
+            <button type="submit" class="btn btn-primary" [disabled]="saving || !form.valid">
+              <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+              {{editData.Id ? 'Cập nhật' : 'Thêm mới'}}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

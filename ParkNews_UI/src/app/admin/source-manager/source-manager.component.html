@@ -1,0 +1,171 @@
+<div class="article-manager">
+  <div class="page-header">
+    <button class="btn btn-secondary" [routerLink]="['/admin/dashboard']">
+      <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+    </button>
+    <h1 class="page-title">Quản lý nguồn</h1>
+  </div>
+  
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Tìm kiếm nguồn..." (ngModelChange)="search()" class="form-control">
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fas fa-plus"></i> Thêm nguồn mới
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+  </div>
+
+  <table *ngIf="!loading && sources.length > 0" class="source-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tên nguồn</th>
+        <th>Website URL</th>
+        <th>Logo</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let source of sources | slice: (currentPage-1) * pageSize : currentPage * pageSize">
+        <td>{{ source.Id }}</td>
+        <td>{{ source.Name }}</td>
+        <td>
+          <a [href]="source.WebsiteUrl" target="_blank" rel="noopener noreferrer">
+            {{ source.WebsiteUrl }}
+          </a>
+        </td>
+        <td>
+          <div class="logo-preview">
+            <img *ngIf="source.LogoUrl" [src]="source.LogoUrl" alt="{{ source.Name }} logo" class="source-logo" />
+            <span *ngIf="!source.LogoUrl" class="no-logo">Không có logo</span>
+          </div>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-primary btn-sm" (click)="openModal(source)" title="Sửa">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="confirmDelete(source.Id || 0)" title="Xóa">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && sources.length === 0" class="no-data">
+    <p>Không có nguồn nào.</p>
+  </div>
+
+  <div class="pagination" *ngIf="sources.length > pageSize">
+    <button class="btn btn-outline-primary" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span>Trang {{currentPage}} / {{totalPages}}</span>
+    <button class="btn btn-outline-primary" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" [class.show]="showModal" *ngIf="showModal">
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{editData.Id ? 'Sửa nguồn' : 'Thêm nguồn mới'}}</h5>
+        <button type="button" class="close" (click)="closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #form="ngForm">
+          <div class="form-group">
+            <label for="name">Tên nguồn <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              [(ngModel)]="editData.Name" 
+              class="form-control" 
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="websiteUrl">Website URL <span class="required">*</span></label>
+            <input 
+              type="url" 
+              id="websiteUrl" 
+              name="websiteUrl" 
+              [(ngModel)]="editData.WebsiteUrl" 
+              class="form-control" 
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="logoUrl">Logo URL</label>
+            <input 
+              type="url" 
+              id="logoUrl" 
+              name="logoUrl" 
+              [(ngModel)]="editData.LogoUrl" 
+              class="form-control"
+            />
+            <small class="form-text text-muted">URL hình ảnh logo của nguồn (tùy chọn)</small>
+          </div>
+          <div *ngIf="editData.LogoUrl" class="logo-preview">
+            <img [src]="editData.LogoUrl" alt="Logo preview" />
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Hủy</button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              [disabled]="saving || !form.valid" 
+              (click)="saveItem()"
+            >
+              <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+              {{editData.Id ? 'Cập nhật' : 'Thêm mới'}}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal" [class.show]="showDeleteModal" *ngIf="showDeleteModal">
+  <div class="modal-backdrop" (click)="cancelDelete()"></div>
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Xác nhận xóa</h5>
+        <button type="button" class="close" (click)="cancelDelete()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn xóa nguồn này không?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Hủy</button>
+        <button 
+          type="button" 
+          class="btn btn-danger" 
+          [disabled]="saving" 
+          (click)="deleteItem()"
+        >
+          <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+          Xóa
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 

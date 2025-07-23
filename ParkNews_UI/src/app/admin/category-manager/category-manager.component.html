@@ -1,0 +1,122 @@
+<div class="article-manager">
+  <div class="page-header">
+    <button class="btn btn-secondary" [routerLink]="['/admin/dashboard']">
+      <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+    </button>
+    <h1 class="page-title">Quản lý danh mục</h1>
+  </div>
+  
+  <div class="toolbar">
+    <div class="search-box">
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Tìm kiếm danh mục..." (ngModelChange)="search()" class="form-control">
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">
+      <i class="fas fa-plus"></i> Thêm danh mục mới
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+  </div>
+
+  <table *ngIf="!loading && categories.length > 0" class="category-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tên danh mục</th>
+        <th>Mô tả</th>
+        <th>Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let category of categories | slice: (currentPage-1) * pageSize : currentPage * pageSize">
+        <td>{{category.Id}}</td>
+        <td>{{category.Name}}</td>
+        <td>{{category.Description || 'Không có mô tả'}}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-primary btn-sm" (click)="openModal(category)" title="Sửa">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" (click)="confirmDelete(category.Id!)" title="Xóa">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && categories.length === 0" class="no-data">
+    <p>Không có danh mục nào.</p>
+  </div>
+
+  <div class="pagination" *ngIf="categories.length > pageSize">
+    <button class="btn btn-outline-primary" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span>Trang {{currentPage}} / {{totalPages}}</span>
+    <button class="btn btn-outline-primary" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" [class.show]="showModal" *ngIf="showModal">
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{editData.Id ? 'Sửa danh mục' : 'Thêm danh mục mới'}}</h5>
+        <button type="button" class="close" (click)="closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form #form="ngForm">
+          <div class="form-group">
+            <label for="name">Tên danh mục <span class="required">*</span></label>
+            <input type="text" class="form-control" id="name" name="name" [(ngModel)]="editData.Name" required>
+          </div>
+          <div class="form-group">
+            <label for="description">Mô tả</label>
+            <textarea class="form-control" id="description" name="description" [(ngModel)]="editData.Description" rows="3"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Hủy</button>
+            <button type="button" class="btn btn-primary" [disabled]="saving || !form.valid" (click)="saveItem()">
+              <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+              {{editData.Id ? 'Cập nhật' : 'Thêm mới'}}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal" [class.show]="showDeleteModal" *ngIf="showDeleteModal">
+  <div class="modal-backdrop" (click)="cancelDelete()"></div>
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Xác nhận xóa</h5>
+        <button type="button" class="close" (click)="cancelDelete()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn xóa danh mục này không?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelDelete()">Hủy</button>
+        <button type="button" class="btn btn-danger" [disabled]="saving" (click)="deleteItem()">
+          <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+          Xóa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

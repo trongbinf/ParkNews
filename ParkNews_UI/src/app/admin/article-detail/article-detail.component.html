@@ -1,0 +1,75 @@
+<div class="article-detail">
+  <div class="page-header">
+    <button class="btn btn-secondary" [routerLink]="['/admin/articles']">
+      <i class="fas fa-arrow-left"></i> Quay lại danh sách
+    </button>
+    <h1 class="page-title">Chi tiết bài viết</h1>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <i class="fas fa-exclamation-triangle"></i>
+    Không thể tải thông tin bài viết. Vui lòng thử lại sau.
+  </div>
+
+  <div *ngIf="!loading && !error && article" class="article-content">
+    <div class="article-header">
+      <h2 class="article-title">{{article.Title}}</h2>
+      <div class="article-meta">
+        <span class="category" *ngIf="article.Category">
+          <i class="fas fa-folder"></i> {{article.Category?.Name || 'N/A'}}
+        </span>
+        <span class="author" *ngIf="article.Author">
+          <i class="fas fa-user"></i> {{article.Author?.FullName || 'N/A'}}
+        </span>
+        <span class="date" *ngIf="article.PublishDate">
+          <i class="fas fa-calendar"></i> {{article.PublishDate | date:'dd/MM/yyyy HH:mm'}}
+        </span>
+        <span class="featured" [class.is-featured]="article.IsFeatured">
+          <i class="fas" [ngClass]="article.IsFeatured ? 'fa-star' : 'fa-star-o'"></i> 
+          {{article.IsFeatured ? 'Bài viết nổi bật' : 'Bài viết thường'}}
+        </span>
+      </div>
+    </div>
+
+    <div class="article-image" *ngIf="article.FeaturedImageUrl">
+      <img [src]="article.FeaturedImageUrl" [alt]="article.Title">
+    </div>
+
+    <div class="article-summary" *ngIf="article.Summary">
+      <h3>Tóm tắt</h3>
+      <p>{{article.Summary}}</p>
+    </div>
+
+    <div class="article-body">
+      <h3>Nội dung</h3>
+      <div [innerHTML]="article.Content"></div>
+    </div>
+
+    <div class="article-tags" *ngIf="article.ArticleTags?.$values?.length">
+      <h3>Thẻ</h3>
+      <div class="tag-list">
+        <span class="tag" *ngFor="let articleTag of article.ArticleTags.$values">
+          {{articleTag.Tag?.Name}}
+        </span>
+      </div>
+    </div>
+
+    <div class="article-source" *ngIf="article.Source">
+      <h3>Nguồn</h3>
+      <p>{{article.Source.Name}}</p>
+    </div>
+
+    <div class="article-actions">
+      <button class="btn btn-primary" [routerLink]="['/admin/articles']" [queryParams]="{edit: article.Id}">
+        <i class="fas fa-edit"></i> Sửa bài viết
+      </button>
+      <button class="btn btn-danger" (click)="deleteArticle(article.Id)">
+        <i class="fas fa-trash"></i> Xóa bài viết
+      </button>
+    </div>
+  </div>
+</div> 
