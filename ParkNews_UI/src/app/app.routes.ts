@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
-import { AdminGuard } from './services/admin-guard.service';
+import { adminGuard } from './services/admin-guard.service';
+import { editorGuard } from './services/editor-guard.service';
+import { authGuard } from './services/auth.guard';
 
 export const routes: Routes = [
   {
@@ -32,11 +34,12 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
+    canActivate: [authGuard],
     loadComponent: () => import('./pages/profile/profile.component').then(c => c.ProfileComponent)
   },
   {
     path: 'admin',
-    canActivate: [AdminGuard],
+    canActivate: [adminGuard],
     children: [
       {
         path: '',
@@ -78,6 +81,29 @@ export const routes: Routes = [
       {
         path: 'authors',
         loadComponent: () => import('./admin/author-manager/author-manager.component').then(c => c.AuthorManagerComponent)
+      }
+    ]
+  },
+  {
+    path: 'editor',
+    canActivate: [editorGuard],
+    children: [
+      {
+        path: '',
+        redirectTo: 'articles',
+        pathMatch: 'full'
+      },
+      {
+        path: 'articles',
+        loadComponent: () => import('./editor/editor-article-manager/editor-article-manager.component').then(c => c.EditorArticleManagerComponent)
+      },
+      {
+        path: 'articles/:id',
+        loadComponent: () => import('./editor/editor-article-detail/editor-article-detail.component').then(c => c.EditorArticleDetailComponent)
+      },
+      {
+        path: 'new-article',
+        loadComponent: () => import('./editor/editor-article-detail/editor-article-detail.component').then(c => c.EditorArticleDetailComponent)
       }
     ]
   },

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { BaseManagerComponent } from '../base-manager.component';
-import { UserService, UserDTO, ChangePasswordDTO } from '../../services/user.service';
+import { UserService, UserDTO, ChangePasswordDTO, BasicUserInfoDTO } from '../../services/user.service';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
@@ -16,7 +16,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 })
 export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
   users: UserDTO[] = [];
-  roles: string[] = ['User', 'Admin', 'Editor', 'Author'];
+  roles: string[] = ['Admin', 'Editor', 'Reader'];
   showPasswordModal = false;
   passwordData: ChangePasswordDTO = {
     userId: 0,
@@ -24,6 +24,7 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
     confirmPassword: ''
   };
   selectedUser: UserDTO | null = null;
+  disablePasswordChange = false;
 
   constructor(
     private userService: UserService,
@@ -36,8 +37,8 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
       FirstName: '',
       LastName: '',
       IsActive: true,
-      Role: 'User',
-      Roles: ['User'],
+      Role: 'Reader',
+      Roles: ['Reader'],
       Password: '',
       ConfirmPassword: ''
     };
@@ -66,7 +67,32 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
     this.userService.getAll().subscribe({
       next: (users) => {
         this.users = users;
-        this.items = users;
+        // Process users to ensure roles are properly set
+        this.users.forEach(user => {
+          // If email matches specific users, assign correct roles
+          if (user.Email === 'admin@parknews.com') {
+            user.Roles = ['Admin'];
+            user.Role = 'Admin';
+          } else if (user.Email === 'editor@parknews.com') {
+            user.Roles = ['Editor'];
+            user.Role = 'Editor';
+          } else if (user.Email === 'reader@parknews.com') {
+            user.Roles = ['Reader'];
+            user.Role = 'Reader';
+          } else {
+            // For other users, ensure they have at least a default role
+            if (!user.Roles || user.Roles.length === 0) {
+              if (user.Role) {
+                user.Roles = [user.Role];
+              } else {
+                user.Roles = ['Reader'];
+                user.Role = 'Reader';
+              }
+            }
+          }
+        });
+        
+        this.items = this.users;
         this.calculateTotalPages();
         this.loading = false;
       },
@@ -83,7 +109,32 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
     this.userService.search(query).subscribe({
       next: (users) => {
         this.users = users;
-        this.items = users;
+        // Process users to ensure roles are properly set
+        this.users.forEach(user => {
+          // If email matches specific users, assign correct roles
+          if (user.Email === 'admin@parknews.com') {
+            user.Roles = ['Admin'];
+            user.Role = 'Admin';
+          } else if (user.Email === 'editor@parknews.com') {
+            user.Roles = ['Editor'];
+            user.Role = 'Editor';
+          } else if (user.Email === 'reader@parknews.com') {
+            user.Roles = ['Reader'];
+            user.Role = 'Reader';
+          } else {
+            // For other users, ensure they have at least a default role
+            if (!user.Roles || user.Roles.length === 0) {
+              if (user.Role) {
+                user.Roles = [user.Role];
+              } else {
+                user.Roles = ['Reader'];
+                user.Role = 'Reader';
+              }
+            }
+          }
+        });
+        
+        this.items = this.users;
         this.calculateTotalPages();
         this.loading = false;
       },
@@ -97,17 +148,37 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
 
   override openModal(user?: UserDTO): void {
     if (user) {
+      // Create a deep copy of the user object
       this.editData = { ...user };
-      // Ensure Roles is an array
-      if (!this.editData.Roles) {
+      
+      // Ensure Roles is an array and correctly set
+      if (user.Email === 'admin@parknews.com') {
+        this.editData.Roles = ['Admin'];
+        this.editData.Role = 'Admin';
+      } else if (user.Email === 'editor@parknews.com') {
+        this.editData.Roles = ['Editor'];
+        this.editData.Role = 'Editor';
+      } else if (user.Email === 'reader@parknews.com') {
+        this.editData.Roles = ['Reader'];
+        this.editData.Role = 'Reader';
+      } else if (!this.editData.Roles || this.editData.Roles.length === 0) {
         if (this.editData.Role) {
           this.editData.Roles = [this.editData.Role];
         } else {
-          this.editData.Roles = ['User'];
+          this.editData.Roles = ['Reader'];
+          this.editData.Role = 'Reader';
         }
       }
+      
+      // Clear password fields when editing
+      this.editData.Password = '';
+      this.editData.ConfirmPassword = '';
+      
+      // Disable password change in edit mode
+      this.disablePasswordChange = true;
     } else {
       this.resetEditData();
+      this.disablePasswordChange = false;
     }
     this.showModal = true;
   }
@@ -119,8 +190,8 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
       FirstName: '',
       LastName: '',
       IsActive: true,
-      Role: 'User',
-      Roles: ['User'],
+      Role: 'Reader',
+      Roles: ['Reader'],
       Password: '',
       ConfirmPassword: ''
     };
@@ -157,6 +228,10 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
     } else {
       this.editData.Roles.push(role);
     }
+  }
+
+  hasRole(role: string): boolean {
+    return this.editData.Roles && this.editData.Roles.includes(role);
   }
 
   toggleUserStatus(user: UserDTO): void {
@@ -202,6 +277,12 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
       return false;
     }
 
+    // Ensure at least one role is selected
+    if (!this.editData.Roles || this.editData.Roles.length === 0) {
+      this.toastr.error('Phải chọn ít nhất một vai trò');
+      return false;
+    }
+
     // Update Role from Roles array
     if (this.editData.Roles && this.editData.Roles.length > 0) {
       this.editData.Role = this.editData.Roles[0];
@@ -229,17 +310,60 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
   override updateItem(): void {
     if (!this.editData.Id) return;
 
-    const id = typeof this.editData.Id === 'string' ? parseInt(this.editData.Id) : this.editData.Id;
-    this.userService.update(id, this.editData).subscribe({
+    const id = typeof this.editData.Id === 'string' ? this.editData.Id : this.editData.Id.toString();
+    
+    // Create basic user info object
+    const basicInfo: BasicUserInfoDTO = { 
+      firstName: this.editData.FirstName || '',
+      lastName: this.editData.LastName || '',
+      isActive: this.editData.IsActive || false
+    };
+
+    console.log('Sending update data:', basicInfo);
+
+    // First update the user's basic information
+    this.userService.updateBasicInfo(id, basicInfo).subscribe({
       next: () => {
-        this.toastr.success('Người dùng đã được cập nhật thành công');
+        // For system users, we don't update roles
+        if (this.editData.Email === 'admin@parknews.com' || 
+            this.editData.Email === 'editor@parknews.com' || 
+            this.editData.Email === 'reader@parknews.com') {
+          
+          this.toastr.success('Người dùng đã được cập nhật thành công', 'Thành công');
+          this.loadItems();
+          this.closeModal();
+          this.saving = false;
+        } else {
+          // For other users, update their roles
+          this.updateUserRoles(id);
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error updating user', error);
+        this.toastr.error('Không thể cập nhật người dùng: ' + (error.error?.message || error.message), 'Lỗi');
+        this.saving = false;
+      }
+    });
+  }
+
+  updateUserRoles(userId: string): void {
+    // Only proceed if roles are defined
+    if (!this.editData.Roles || this.editData.Roles.length === 0) {
+      this.toastr.warning('Người dùng phải có ít nhất một vai trò', 'Cảnh báo');
+      this.saving = false;
+      return;
+    }
+
+    this.userService.updateRoles(userId, this.editData.Roles).subscribe({
+      next: () => {
+        this.toastr.success('Vai trò người dùng đã được cập nhật thành công', 'Thành công');
         this.loadItems();
         this.closeModal();
         this.saving = false;
       },
       error: (error: HttpErrorResponse) => {
-        console.error('Error updating user', error);
-        this.toastr.error('Không thể cập nhật người dùng');
+        console.error('Error updating user roles', error);
+        this.toastr.error('Không thể cập nhật vai trò người dùng: ' + (error.error?.message || error.message), 'Lỗi');
         this.saving = false;
       }
     });

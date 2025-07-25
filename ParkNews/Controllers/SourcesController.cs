@@ -87,6 +87,45 @@ namespace ParkNews.Controllers
             return NoContent();
         }
 
+        // PUT: api/Sources/update-basic/5
+        [HttpPut("update-basic/{id}")]
+        public async Task<IActionResult> UpdateBasicSourceInfo(int id, [FromBody] SourceUpdateDTO model)
+        {
+            if (model == null)
+            {
+                return BadRequest("Invalid data");
+            }
+
+            var source = await _context.Sources.FindAsync(id);
+            if (source == null)
+            {
+                return NotFound("Source not found");
+            }
+
+            // Update basic source information
+            source.Name = model.Name;
+            source.WebsiteUrl = model.WebsiteUrl;
+            source.LogoUrl = model.LogoUrl;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!SourceExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
         // DELETE: api/Sources/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSource(int id)
@@ -151,5 +190,12 @@ namespace ParkNews.Controllers
         {
             return _context.Sources.Any(e => e.Id == id);
         }
+    }
+
+    public class SourceUpdateDTO
+    {
+        public string Name { get; set; }
+        public string WebsiteUrl { get; set; }
+        public string LogoUrl { get; set; }
     }
 } 

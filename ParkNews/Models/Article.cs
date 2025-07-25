@@ -16,6 +16,7 @@ namespace ParkNews.Models
 
         public DateTime PublishDate { get; set; }
         public bool IsFeatured { get; set; }
+        public bool IsPublished { get; set; } = true;  // Trạng thái xuất bản
 
         // ------------ Khóa ngoại -------------
         [ForeignKey(nameof(Category))]

@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { map, take } from 'rxjs/operators';
 
-export const adminGuard: CanActivateFn = (route, state) => {
+export const editorGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const toastr = inject(ToastrService);
@@ -18,8 +18,8 @@ export const adminGuard: CanActivateFn = (route, state) => {
         return false;
       }
       
-      const isAdmin = authService.isAdmin();
-      if (!isAdmin) {
+      const isEditor = authService.isEditor();
+      if (!isEditor) {
         toastr.error('Bạn không có quyền truy cập trang này', 'Truy cập bị từ chối');
         router.navigate(['/']);
         return false;
@@ -28,4 +28,4 @@ export const adminGuard: CanActivateFn = (route, state) => {
       return true;
     })
   );
-};
+}; 

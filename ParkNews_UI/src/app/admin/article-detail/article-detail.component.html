@@ -63,13 +63,6 @@
       <p>{{article.Source.Name}}</p>
     </div>
 
-    <div class="article-actions">
-      <button class="btn btn-primary" [routerLink]="['/admin/articles']" [queryParams]="{edit: article.Id}">
-        <i class="fas fa-edit"></i> Sửa bài viết
-      </button>
-      <button class="btn btn-danger" (click)="deleteArticle(article.Id)">
-        <i class="fas fa-trash"></i> Xóa bài viết
-      </button>
-    </div>
+   
   </div>
 </div> 

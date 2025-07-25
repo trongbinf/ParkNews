@@ -99,6 +99,38 @@ namespace ParkNews.Controllers
             return NoContent();
         }
 
+        // PUT: api/Users/update-basic/{id}
+        [HttpPut("update-basic/{id}")]
+        public async Task<IActionResult> UpdateBasicUserInfo(string id, [FromBody] BasicUserInfoDTO model)
+        {
+            if (model == null)
+            {
+                return BadRequest("Invalid data");
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            // Update basic user information
+            user.FirstName = model.FirstName ?? user.FirstName;
+            user.LastName = model.LastName ?? user.LastName;
+            user.IsActive = model.IsActive;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            // Email and UserName cannot be changed here
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            return NoContent();
+        }
+
         // DELETE: api/Users/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
@@ -139,6 +171,49 @@ namespace ParkNews.Controllers
         {
             var roles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
             return Ok(roles);
+        }
+
+        // POST: api/Users/update-roles
+        [HttpPost("update-roles")]
+        public async Task<IActionResult> UpdateUserRoles([FromBody] UpdateRolesDTO model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.UserId) || model.Roles == null)
+            {
+                return BadRequest("Invalid request data");
+            }
+
+            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
+
+            // Don't allow changing roles for system users
+            if (user.Email == "admin@parknews.com" || 
+                user.Email == "editor@parknews.com" || 
+                user.Email == "reader@parknews.com")
+            {
+                return BadRequest("Cannot change roles for system users");
+            }
+
+            // Get current roles
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            
+            // Remove all current roles
+            var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeResult.Succeeded)
+            {
+                return BadRequest(removeResult.Errors);
+            }
+
+            // Add new roles
+            var addResult = await _userManager.AddToRolesAsync(user, model.Roles);
+            if (!addResult.Succeeded)
+            {
+                return BadRequest(addResult.Errors);
+            }
+
+            return NoContent();
         }
 
         // POST: api/Users/toggle-status/{id}
@@ -277,5 +352,18 @@ namespace ParkNews.Controllers
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
         public string Email { get; set; }
+    }
+
+    public class UpdateRolesDTO
+    {
+        public string UserId { get; set; }
+        public List<string> Roles { get; set; }
+    }
+
+    public class BasicUserInfoDTO
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public bool IsActive { get; set; }
     }
 } 

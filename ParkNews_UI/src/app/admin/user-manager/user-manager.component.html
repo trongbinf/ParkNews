@@ -36,10 +36,25 @@
         <td>{{user.Email}}</td>
         <td>{{user.FirstName || ''}} {{user.LastName || ''}}</td>
         <td>
-          <span *ngIf="user.Role">{{user.Role}}</span>
-          <span *ngIf="user.Roles && user.Roles.length > 0">
-            <span *ngFor="let role of user.Roles; let last = last">
-              {{role}}{{!last ? ', ' : ''}}
+          <span class="user-roles">
+            <span *ngIf="user.Email === 'admin@parknews.com'">
+              <span class="role-badge role-admin">Admin</span>
+            </span>
+            <span *ngIf="user.Email === 'editor@parknews.com'">
+              <span class="role-badge role-editor">Editor</span>
+            </span>
+            <span *ngIf="user.Email === 'reader@parknews.com'">
+              <span class="role-badge role-reader">Reader</span>
+            </span>
+            <span *ngIf="user.Email !== 'admin@parknews.com' && user.Email !== 'editor@parknews.com' && user.Email !== 'reader@parknews.com'">
+              <span *ngIf="!user.Roles || user.Roles.length === 0">
+                <span class="role-badge" [ngClass]="'role-' + (user.Role || 'reader').toLowerCase()">{{user.Role || 'Reader'}}</span>
+              </span>
+              <span *ngIf="user.Roles && user.Roles.length > 0">
+                <span *ngFor="let role of user.Roles" class="role-badge" [ngClass]="'role-' + role.toLowerCase()">
+                  {{role}}
+                </span>
+              </span>
             </span>
           </span>
         </td>
@@ -59,9 +74,6 @@
           <div class="action-buttons">
             <button class="btn btn-primary btn-sm" (click)="openModal(user)" title="Sửa">
               <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-info btn-sm" (click)="openPasswordModal(user)" title="Đổi mật khẩu">
-              <i class="fas fa-key"></i>
             </button>
             <button class="btn btn-danger btn-sm" (click)="confirmDelete(user.Id!)" title="Xóa">
               <i class="fas fa-trash"></i>
@@ -102,7 +114,8 @@
         <form #form="ngForm">
           <div class="form-group">
             <label for="email">Email <span class="required">*</span></label>
-            <input type="email" class="form-control" id="email" name="email" [(ngModel)]="editData.Email" required>
+            <input type="email" class="form-control" id="email" name="email" [(ngModel)]="editData.Email" required [readonly]="editData.Id">
+            <small class="form-text text-muted" *ngIf="editData.Id">Email không thể thay đổi sau khi tạo tài khoản.</small>
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
@@ -118,6 +131,10 @@
             <label for="password">Mật khẩu <span class="required">*</span></label>
             <input type="password" class="form-control" id="password" name="password" [(ngModel)]="editData.Password" required>
           </div>
+          <div class="form-group" *ngIf="!editData.Id">
+            <label for="confirmPassword">Xác nhận mật khẩu <span class="required">*</span></label>
+            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" [(ngModel)]="editData.ConfirmPassword" required>
+          </div>
           <div class="form-group">
             <label>Vai trò</label>
             <div class="role-checkboxes">
@@ -127,13 +144,17 @@
                   type="checkbox" 
                   [id]="'role_' + role" 
                   [name]="'role_' + role"
-                  [checked]="editData.Roles && editData.Roles.includes(role)"
+                  [checked]="hasRole(role)"
+                  [disabled]="editData.Email === 'admin@parknews.com' || editData.Email === 'editor@parknews.com' || editData.Email === 'reader@parknews.com'"
                   (change)="toggleRole(role)">
                 <label class="form-check-label" [for]="'role_' + role">
                   {{role}}
                 </label>
               </div>
             </div>
+            <small class="form-text text-muted" *ngIf="editData.Email === 'admin@parknews.com' || editData.Email === 'editor@parknews.com' || editData.Email === 'reader@parknews.com'">
+              Vai trò của người dùng hệ thống không thể thay đổi.
+            </small>
           </div>
           <div class="form-check" *ngIf="editData.Id">
             <input class="form-check-input" type="checkbox" id="isActive" name="isActive" [(ngModel)]="editData.IsActive">
@@ -151,45 +172,6 @@
             >
               <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
               {{editData.Id ? 'Cập nhật' : 'Thêm mới'}}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Password Modal -->
-<div class="modal" [class.show]="showPasswordModal" *ngIf="showPasswordModal">
-  <div class="modal-backdrop" (click)="closePasswordModal()"></div>
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Đổi mật khẩu</h5>
-        <button type="button" class="close" (click)="closePasswordModal()">
-          <span>&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form #passwordForm="ngForm">
-          <div class="form-group">
-            <label for="newPassword">Mật khẩu mới <span class="required">*</span></label>
-            <input type="password" class="form-control" id="newPassword" name="newPassword" [(ngModel)]="passwordData.newPassword" required>
-          </div>
-          <div class="form-group">
-            <label for="confirmPassword">Xác nhận mật khẩu <span class="required">*</span></label>
-            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" [(ngModel)]="passwordData.confirmPassword" required>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" (click)="closePasswordModal()">Hủy</button>
-            <button 
-              type="button" 
-              class="btn btn-primary" 
-              [disabled]="saving || !passwordForm.valid || passwordData.newPassword !== passwordData.confirmPassword" 
-              (click)="changePassword()"
-            >
-              <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
-              Đổi mật khẩu
             </button>
           </div>
         </form>

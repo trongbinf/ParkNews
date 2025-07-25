@@ -402,6 +402,58 @@
   padding-left: 0.5rem;
 }
 
+.user-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background-color: #e9ecef;
+  font-size: 0.8rem;
+  color: #495057;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+input[readonly] {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.form-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+/* Style roles by type */
+.role-badge {
+  background-color: #6c757d;
+  color: white;
+  margin-right: 4px;
+}
+
+.role-badge.role-admin {
+  background-color: #dc3545;
+  color: white;
+}
+
+.role-badge.role-editor {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.role-badge.role-reader {
+  background-color: #28a745;
+  color: white;
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .article-manager {

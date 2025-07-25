@@ -115,6 +115,20 @@ export class ArticleService {
     );
   }
 
+  getByAuthor(authorId: number | string): Observable<Article[]> {
+    // First try to use the API endpoint
+    return this.http.get<ArticleResponse>(`${this.apiUrl}/byauthor/${authorId}`).pipe(
+      map(response => {
+        if (response && response.$values && Array.isArray(response.$values)) {
+          return response.$values;
+        }
+        return [];
+      }),
+      // If the API call fails, fallback to filtering locally
+      // This is handled in the error callback in the component
+    );
+  }
+
   getByTag(tagId: number): Observable<Article[]> {
     return this.http.get<ArticleResponse>(`${API_URLS.article}/bytag/${tagId}`).pipe(
       map(response => response.$values)

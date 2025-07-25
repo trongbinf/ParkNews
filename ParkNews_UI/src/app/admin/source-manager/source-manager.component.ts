@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { BaseManagerComponent } from '../base-manager.component';
-import { SourceService } from '../../services/source.service';
+import { SourceService, SourceUpdateDTO } from '../../services/source.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 export interface SourceDTO {
   Id?: number;
@@ -49,7 +50,7 @@ export class SourceManagerComponent extends BaseManagerComponent<SourceDTO> {
         this.calculateTotalPages();
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: HttpErrorResponse) => {
         console.error('Error loading sources', error);
         this.toastr.error('Không thể tải danh sách nguồn');
         this.loading = false;
@@ -76,7 +77,7 @@ export class SourceManagerComponent extends BaseManagerComponent<SourceDTO> {
         this.calculateTotalPages();
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: HttpErrorResponse) => {
         console.error('Error searching sources', error);
         this.toastr.error('Không thể tìm kiếm nguồn');
         this.loading = false;
@@ -112,7 +113,7 @@ export class SourceManagerComponent extends BaseManagerComponent<SourceDTO> {
         this.closeModal();
         this.saving = false;
       },
-      error: (error) => {
+      error: (error: HttpErrorResponse) => {
         console.error('Error creating source', error);
         this.toastr.error('Không thể tạo nguồn');
         this.saving = false;
@@ -124,16 +125,26 @@ export class SourceManagerComponent extends BaseManagerComponent<SourceDTO> {
     if (!this.editData.Id) return;
 
     const id = typeof this.editData.Id === 'string' ? parseInt(this.editData.Id) : this.editData.Id;
-    this.sourceService.update(id, this.editData).subscribe({
+    
+    // Create a SourceUpdateDTO object from the editData
+    const updateData: SourceUpdateDTO = {
+      name: this.editData.Name,
+      websiteUrl: this.editData.WebsiteUrl,
+      logoUrl: this.editData.LogoUrl || ''
+    };
+
+    console.log('Updating source with data:', updateData);
+    
+    this.sourceService.updateBasic(id, updateData).subscribe({
       next: () => {
         this.toastr.success('Nguồn đã được cập nhật thành công');
         this.loadItems();
         this.closeModal();
         this.saving = false;
       },
-      error: (error) => {
+      error: (error: HttpErrorResponse) => {
         console.error('Error updating source', error);
-        this.toastr.error('Không thể cập nhật nguồn');
+        this.toastr.error('Không thể cập nhật nguồn: ' + (error.error?.message || error.message));
         this.saving = false;
       }
     });
@@ -148,7 +159,7 @@ export class SourceManagerComponent extends BaseManagerComponent<SourceDTO> {
         this.saving = false;
         this.showDeleteModal = false;
       },
-      error: (error) => {
+      error: (error: HttpErrorResponse) => {
         console.error('Error deleting source', error);
         this.toastr.error('Không thể xóa nguồn');
         this.saving = false;

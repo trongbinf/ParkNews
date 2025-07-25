@@ -1,0 +1,152 @@
+<div class="editor-article-detail">
+  <div class="page-header">
+    <h1 class="page-title">{{isNew ? 'Tạo bài viết mới' : 'Chỉnh sửa bài viết'}}</h1>
+    <p class="page-subtitle">{{isNew ? 'Tạo bài viết mới để xuất bản' : 'Chỉnh sửa thông tin bài viết'}}</p>
+  </div>
+  
+  <div *ngIf="loading" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+  </div>
+  
+  <form *ngIf="!loading" (ngSubmit)="saveArticle()" #articleForm="ngForm">
+    <div class="form-group">
+      <label for="title">Tiêu đề <span class="required">*</span></label>
+      <input 
+        type="text" 
+        id="title" 
+        name="title" 
+        [(ngModel)]="article.Title" 
+        class="form-control" 
+        required 
+        placeholder="Nhập tiêu đề bài viết"
+      >
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="categoryId">Danh mục <span class="required">*</span></label>
+        <select 
+          id="categoryId" 
+          name="categoryId" 
+          [(ngModel)]="article.CategoryId" 
+          class="form-control" 
+          required
+        >
+          <option [ngValue]="null" disabled>-- Chọn danh mục --</option>
+          <option *ngFor="let category of categories" [ngValue]="category.Id">{{category.Name}}</option>
+        </select>
+      </div>
+      
+      <div class="form-group col-md-6">
+        <label for="sourceId">Nguồn</label>
+        <select 
+          id="sourceId" 
+          name="sourceId" 
+          [(ngModel)]="article.SourceId" 
+          class="form-control"
+        >
+          <option [ngValue]="null">-- Không có nguồn --</option>
+          <option *ngFor="let source of sources" [ngValue]="source.Id">{{source.Name}}</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="summary">Tóm tắt</label>
+      <textarea 
+        id="summary" 
+        name="summary" 
+        [(ngModel)]="article.Summary" 
+        class="form-control" 
+        rows="3" 
+        placeholder="Nhập tóm tắt bài viết"
+      ></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label for="featuredImage">Ảnh đại diện</label>
+      <input 
+        type="text" 
+        id="featuredImage" 
+        name="featuredImage" 
+        [(ngModel)]="article.FeaturedImageUrl" 
+        class="form-control" 
+        placeholder="Nhập URL ảnh đại diện"
+      >
+      <div *ngIf="article.FeaturedImageUrl" class="image-preview">
+        <img [src]="article.FeaturedImageUrl" alt="Ảnh đại diện">
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="content">Nội dung <span class="required">*</span></label>
+      <quill-editor
+        id="content"
+        name="content"
+        [(ngModel)]="article.Content"
+        [modules]="quillConfig"
+        placeholder="Nhập nội dung bài viết"
+        [required]="true"
+      ></quill-editor>
+    </div>
+    
+    <div class="form-group">
+      <label>Thẻ</label>
+      <div class="tag-input">
+        <div class="input-group">
+          <input 
+            type="text" 
+            [(ngModel)]="newTag" 
+            name="newTag" 
+            placeholder="Nhập thẻ" 
+            class="form-control"
+            (input)="onTagInput()"
+          >
+          <div class="input-group-append">
+            <button type="button" class="btn btn-outline-primary" (click)="addTag()">Thêm</button>
+          </div>
+        </div>
+        
+        <!-- Tag suggestions -->
+        <div class="tag-suggestions" *ngIf="filteredTags.length > 0">
+          <div 
+            *ngFor="let tag of filteredTags" 
+            class="tag-suggestion-item" 
+            (click)="selectTag(tag.Name)"
+          >
+            {{ tag.Name }}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Selected tags -->
+      <div class="selected-tags">
+        <span *ngFor="let tag of article.Tags; let i = index" class="tag">
+          {{tag}}
+          <button type="button" class="tag-remove" (click)="removeTag(i)">×</button>
+        </span>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <div class="form-check">
+        <input 
+          type="checkbox" 
+          id="isPublished" 
+          name="isPublished" 
+          [(ngModel)]="article.IsPublished" 
+          class="form-check-input"
+        >
+        <label class="form-check-label" for="isPublished">Xuất bản ngay</label>
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Hủy</button>
+      <button type="submit" class="btn btn-primary" [disabled]="saving">
+        <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+        {{saving ? 'Đang lưu...' : (isNew ? 'Tạo bài viết' : 'Cập nhật')}}
+      </button>
+    </div>
+  </form>
+</div> 

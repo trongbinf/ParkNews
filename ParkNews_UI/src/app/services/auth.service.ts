@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface LoginRequest {
@@ -50,6 +50,7 @@ export class AuthService {
   private apiUrl = `${environment.apiUrl}/auth`;
   private currentUserSubject = new BehaviorSubject<any>(null);
   user$ = this.currentUserSubject.asObservable();
+  isAuthenticated$ = this.user$.pipe(map(user => !!user));
 
   constructor(private http: HttpClient) {
     // Check for stored token on initialization
@@ -113,6 +114,14 @@ export class AuthService {
   hasRole(role: string): boolean {
     const user = this.getCurrentUser();
     return user?.roles?.includes(role) || false;
+  }
+  
+  isAdmin(): boolean {
+    return this.hasRole('Admin');
+  }
+  
+  isEditor(): boolean {
+    return this.hasRole('Editor');
   }
 
   validateEmail(email: string): boolean {

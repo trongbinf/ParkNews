@@ -35,12 +35,23 @@ export interface ProfileUpdateDTO {
   Email?: string;
 }
 
+export interface UpdateRoleDTO {
+  userId: string;
+  roles: string[];
+}
+
+export interface BasicUserInfoDTO {
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
   private apiUrl = API_URLS.user;
-  private defaultRoles = ['User', 'Admin', 'Editor', 'Author'];
+  private defaultRoles = ['Admin', 'Editor', 'Reader'];
 
   constructor(private http: HttpClient) { }
 
@@ -84,6 +95,18 @@ export class UserService {
 
   update(id: number | string, user: UserDTO): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}`, user);
+  }
+
+  updateBasicInfo(id: string, info: BasicUserInfoDTO): Observable<any> {
+    return this.http.put(`${this.apiUrl}/update-basic/${id}`, info);
+  }
+
+  updateRoles(userId: string, roles: string[]): Observable<any> {
+    const data: UpdateRoleDTO = {
+      userId: userId,
+      roles: roles
+    };
+    return this.http.post(`${this.apiUrl}/update-roles`, data);
   }
 
   delete(id: number | string): Observable<any> {

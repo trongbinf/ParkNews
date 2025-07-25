@@ -3,7 +3,7 @@
     <button class="btn btn-secondary" [routerLink]="['/admin/dashboard']">
       <i class="fas fa-arrow-left"></i> Quay lại Dashboard
     </button>
-  <h1 class="page-title">Quản lý bài viết</h1>
+    <h1 class="page-title">Quản lý bài viết</h1>
   </div>
   
   <div class="toolbar">
@@ -15,11 +15,39 @@
     </button>
   </div>
 
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label for="categoryFilter">Danh mục:</label>
+      <select id="categoryFilter" [(ngModel)]="selectedCategory" (change)="onCategoryFilterChange()" class="form-control">
+        <option [ngValue]="null">Tất cả danh mục</option>
+        <option *ngFor="let category of categories" [ngValue]="category.Id">{{ category.Name }}</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label for="statusFilter">Nổi bật:</label>
+      <select id="statusFilter" [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()" class="form-control">
+        <option *ngFor="let option of statusOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label for="publishFilter">Xuất bản:</label>
+      <select id="publishFilter" [(ngModel)]="selectedPublishStatus" (change)="onPublishStatusFilterChange()" class="form-control">
+        <option *ngFor="let option of publishOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </div>
+    
+    <button class="btn btn-outline-secondary" (click)="resetFilters()">
+      <i class="fas fa-times"></i> Xóa bộ lọc
+    </button>
+  </div>
+
   <div *ngIf="loading" class="loading-spinner">
     <i class="fas fa-spinner fa-spin"></i> Đang tải...
   </div>
 
-  <table *ngIf="!loading && articles.length > 0" class="article-table">
+  <table *ngIf="!loading && filteredArticles.length > 0" class="article-table">
     <thead>
       <tr>
         <th>ID</th>
@@ -28,18 +56,19 @@
         <th>Tác giả</th>
         <th>Ngày xuất bản</th>
         <th>Nổi bật</th>
+        <th>Xuất bản</th>
         <th>Hành động</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let article of articles">
+      <tr *ngFor="let article of filteredArticles | slice: (currentPage-1) * pageSize : currentPage * pageSize">
         <td>{{article.Id}}</td>
         <td>
-        <div class="article-title">
+          <div class="article-title">
             <div class="image-preview" *ngIf="article.FeaturedImageUrl">
               <img [src]="article.FeaturedImageUrl" alt="Thumbnail">
-          </div>
-          <div>
+            </div>
+            <div class="article-info">
               <div class="title">{{article.Title || 'Không có tiêu đề'}}</div>
               <div class="slug text-muted">{{article.Slug || ''}}</div>
             </div>
@@ -49,20 +78,39 @@
         <td>{{article.Author?.FullName || 'N/A'}}</td>
         <td>{{article.PublishDate ? (article.PublishDate | date:'dd/MM/yyyy HH:mm') : 'N/A'}}</td>
         <td>
-          <span class="badge" [class.featured]="article.IsFeatured">
-            {{article.IsFeatured ? 'Có' : 'Không'}}
-        </span>
+          <div class="status-toggle">
+            <button 
+              [ngClass]="article.IsFeatured ? 'btn-success' : 'btn-danger'" 
+              class="btn btn-sm"
+              (click)="toggleArticleVisibility(article)"
+              [disabled]="saving">
+              <i [ngClass]="article.IsFeatured ? 'fa-check-circle' : 'fa-times-circle'" class="fas"></i>
+              <span>{{article.IsFeatured ? 'Nổi bật' : 'Không nổi bật'}}</span>
+            </button>
+          </div>
         </td>
         <td>
-        <div class="action-buttons">
-            <button class="btn btn-primary btn-sm" (click)="openModal(article)" title="Sửa">
-            <i class="fas fa-edit"></i>
+          <div class="status-toggle">
+            <button 
+              [ngClass]="article.IsPublished ? 'btn-success' : 'btn-danger'" 
+              class="btn btn-sm"
+              (click)="toggleArticlePublishStatus(article)"
+              [disabled]="saving">
+              <i [ngClass]="article.IsPublished ? 'fa-check-circle' : 'fa-times-circle'" class="fas"></i>
+              <span>{{article.IsPublished ? 'Đã xuất bản' : 'Chưa xuất bản'}}</span>
             </button>
-            <button class="btn btn-info btn-sm" [routerLink]="['/admin/articles', article.Id]" title="Xem">
-            <i class="fas fa-eye"></i>
+          </div>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-primary btn-sm" (click)="openModal(article)" title="Sửa">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-info btn-sm" [routerLink]="['/admin/articles', article.Id]" title="Xem chi tiết">
+              <i class="fas fa-eye"></i>
             </button>
             <button class="btn btn-danger btn-sm" (click)="deleteArticle(article.Id)" title="Xóa">
-            <i class="fas fa-trash"></i>
+              <i class="fas fa-trash"></i>
             </button>
           </div>
         </td>
@@ -70,11 +118,11 @@
     </tbody>
   </table>
 
-  <div *ngIf="!loading && articles.length === 0" class="no-data">
-    <p>Không có bài viết nào.</p>
-        </div>
+  <div *ngIf="!loading && filteredArticles.length === 0" class="no-data">
+    <p>Không có bài viết nào phù hợp với điều kiện tìm kiếm.</p>
+  </div>
 
-  <div class="pagination" *ngIf="articles.length > 0">
+  <div class="pagination" *ngIf="filteredArticles.length > 0">
     <button class="btn btn-outline-primary" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)">
       <i class="fas fa-chevron-left"></i>
     </button>
@@ -85,119 +133,137 @@
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Add/Edit Modal -->
 <div class="modal" [class.show]="showModal" *ngIf="showModal">
-  <div class="modal-backdrop" (click)="showModal=false"></div>
-  <div class="modal-dialog modal-lg">
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">{{editData.Id ? 'Sửa bài viết' : 'Thêm bài viết mới'}}</h5>
-        <button type="button" class="close" (click)="showModal=false">
+        <h5 class="modal-title">{{ editData.Id ? 'Chỉnh sửa bài viết' : 'Thêm bài viết mới' }}</h5>
+        <button type="button" class="close" (click)="closeModal()">
           <span>&times;</span>
         </button>
       </div>
       <div class="modal-body">
-        <form #form="ngForm" (ngSubmit)="saveArticle(form)">
-    <div class="form-row">
-      <div class="form-group col-12">
-              <label for="title">Tiêu đề <span class="required">*</span></label>
-              <input type="text" class="form-control" id="title" name="Title" [(ngModel)]="editData.Title" required>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group col-6">
-              <label for="categoryId">Danh mục <span class="required">*</span></label>
-              <select id="categoryId" name="CategoryId" [(ngModel)]="editData.CategoryId" class="form-control" required>
-          <option [ngValue]="null" disabled>-- Chọn danh mục --</option>
-                <option *ngFor="let category of categories" [ngValue]="category.Id">{{category.Name}}</option>
-        </select>
-      </div>
-      <div class="form-group col-6">
-              <label for="authorId">Tác giả</label>
-              <select id="authorId" name="AuthorId" [(ngModel)]="editData.AuthorId" class="form-control">
-          <option [ngValue]="null">-- Không có tác giả --</option>
-                <option *ngFor="let author of authors" [ngValue]="author.Id">{{author.FullName}}</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group col-12">
-              <label for="summary">Tóm tắt</label>
-              <textarea id="summary" name="Summary" [(ngModel)]="editData.Summary" class="form-control" rows="3"></textarea>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group col-12">
-              <label for="content">Nội dung <span class="required">*</span></label>
-              <quill-editor 
-                id="content" 
-                name="Content" 
-                [(ngModel)]="editData.Content" 
-                [modules]="quillConfig" 
-                [styles]="{ height: '300px' }"
-                [required]="true">
-              </quill-editor>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group col-8">
-              <label for="featuredImageUrl">URL ảnh đại diện</label>
-              <input type="text" id="featuredImageUrl" name="FeaturedImageUrl" [(ngModel)]="editData.FeaturedImageUrl" class="form-control">
-      </div>
-      <div class="form-group col-4">
-        <div class="image-preview-container">
-          <label>Xem trước ảnh</label>
-                <div class="image-preview" *ngIf="editData.FeaturedImageUrl">
-                  <img [src]="editData.FeaturedImageUrl" alt="Preview">
+        <form #articleForm="ngForm">
+          <div class="form-group">
+            <label for="title">Tiêu đề <span class="required">*</span></label>
+            <input type="text" id="title" name="title" [(ngModel)]="editData.Title" required class="form-control" placeholder="Nhập tiêu đề bài viết">
           </div>
-                <div class="no-image" *ngIf="!editData.FeaturedImageUrl">
-            <i class="fas fa-image"></i>
-            <span>Không có ảnh</span>
+          
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="category">Danh mục <span class="required">*</span></label>
+              <select id="category" name="category" [(ngModel)]="editData.CategoryId" required class="form-control">
+                <option [ngValue]="null" disabled>Chọn danh mục</option>
+                <option *ngFor="let category of categories" [ngValue]="category.Id">{{ category.Name }}</option>
+              </select>
+            </div>
+            
+            <div class="form-group col-md-6">
+              <label for="author">Tác giả <span class="required">*</span></label>
+              <select id="author" name="author" [(ngModel)]="editData.AuthorId" required class="form-control">
+                <option [ngValue]="null" disabled>Chọn tác giả</option>
+                <option *ngFor="let author of authors" [ngValue]="author.Id">{{ author.FullName }}</option>
+              </select>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group col-6">
-        <label>Thẻ</label>
-        <div class="tag-input">
-                <div class="input-group">
-                  <input type="text" [(ngModel)]="newTag" name="newTag" placeholder="Nhập thẻ" class="form-control">
-                  <div class="input-group-append">
-                    <button type="button" class="btn btn-outline-primary" (click)="addTag()">Thêm</button>
-                  </div>
+          
+          <div class="form-group">
+            <label for="description">Mô tả ngắn</label>
+            <textarea id="description" name="description" [(ngModel)]="editData.Description" class="form-control" rows="3" placeholder="Nhập mô tả ngắn về bài viết"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="content">Nội dung <span class="required">*</span></label>
+            <quill-editor id="content" name="content" [(ngModel)]="editData.Content" [required]="true" [modules]="quillConfig" class="rich-editor"></quill-editor>
+          </div>
+          
+          <div class="form-group">
+            <label for="imageUrl">URL hình ảnh đại diện</label>
+            <input type="text" id="imageUrl" name="imageUrl" [(ngModel)]="editData.ImageUrl" class="form-control" placeholder="Nhập URL hình ảnh">
+          </div>
+          
+          <div class="form-group" *ngIf="editData.ImageUrl">
+            <label>Xem trước hình ảnh</label>
+            <div class="image-preview">
+              <img [src]="editData.ImageUrl" alt="Preview">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="tags">Thẻ</label>
+            <div class="tag-input">
+              <div class="input-group">
+                <input type="text" id="tags" name="tags" [(ngModel)]="newTag" class="form-control" placeholder="Nhập thẻ và nhấn Enter">
+                <div class="input-group-append">
+                  <button type="button" class="btn btn-outline-secondary" (click)="addTag()">Thêm</button>
                 </div>
-        </div>
-        <div class="tag-list" *ngIf="editData.tags && editData.tags.length > 0">
-          <span class="tag" *ngFor="let tag of editData.tags; let i = index">
-            {{tag}}
-            <i class="fas fa-times" (click)="removeTag(i)"></i>
-          </span>
-        </div>
-      </div>
-      <div class="form-group col-6">
-        <div class="checkbox-group">
-          <div class="form-check">
-                  <input type="checkbox" name="IsFeatured" [(ngModel)]="editData.IsFeatured" id="isFeatured" class="form-check-input">
-            <label for="isFeatured" class="form-check-label">Bài viết nổi bật</label>
+              </div>
+              <div class="tag-list" *ngIf="editData.Tags.length > 0">
+                <span class="tag" *ngFor="let tag of editData.Tags">
+                  {{ tag }}
+                  <i class="fas fa-times" (click)="removeTag(tag)"></i>
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-actions">
-            <button type="button" class="btn btn-secondary" (click)="showModal=false">Hủy</button>
-            <button type="submit" class="btn btn-primary" [disabled]="saving || !form.valid">
+          
+          <div class="form-group">
+            <label>Trạng thái</label>
+            <div class="form-check">
+              <input type="checkbox" id="isPublished" name="isPublished" [(ngModel)]="editData.IsPublished" class="form-check-input">
+              <label class="form-check-label" for="isPublished">
+                Xuất bản bài viết
+              </label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" id="isFeatured" name="isFeatured" [(ngModel)]="editData.IsFeatured" class="form-check-input">
+              <label class="form-check-label" for="isFeatured">
+                Đặt làm bài viết nổi bật
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Hủy</button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              [disabled]="articleForm.invalid || saving" 
+              (click)="saveArticle(articleForm)"
+            >
               <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
-              {{editData.Id ? 'Cập nhật' : 'Thêm mới'}}
+              {{ editData.Id ? 'Cập nhật' : 'Tạo mới' }}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal" [class.show]="showApprovalModal" *ngIf="showApprovalModal">
+  <div class="modal-backdrop" (click)="showApprovalModal=false"></div>
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Xác nhận thay đổi trạng thái</h5>
+        <button type="button" class="close" (click)="showApprovalModal=false">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" *ngIf="currentArticle">
+        <p>Bạn có chắc muốn thay đổi trạng thái của bài viết:</p>
+        <p><strong>{{ currentArticle.Title }}</strong></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showApprovalModal=false">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveArticleApproval()" [disabled]="saving">
+          <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+          Xác nhận
+        </button>
       </div>
     </div>
   </div>

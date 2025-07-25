@@ -44,6 +44,7 @@ namespace ParkNews.Controllers
                 a.Content,
                 a.PublishDate,
                 a.IsFeatured,
+                a.IsPublished,
                 a.FeaturedImageUrl,
                 Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
                 Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
@@ -83,6 +84,7 @@ namespace ParkNews.Controllers
                 a.Content,
                 a.PublishDate,
                 a.IsFeatured,
+                a.IsPublished,
                 a.FeaturedImageUrl,
                 Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
                 Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
@@ -121,6 +123,7 @@ namespace ParkNews.Controllers
                 a.Content,
                 a.PublishDate,
                 a.IsFeatured,
+                a.IsPublished,
                 a.FeaturedImageUrl,
                 Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
                 Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
@@ -162,6 +165,7 @@ namespace ParkNews.Controllers
                 a.Content,
                 a.PublishDate,
                 a.IsFeatured,
+                a.IsPublished,
                 a.FeaturedImageUrl,
                 Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
                 Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
@@ -200,6 +204,7 @@ namespace ParkNews.Controllers
                 a.Content,
                 a.PublishDate,
                 a.IsFeatured,
+                a.IsPublished,
                 a.FeaturedImageUrl,
                 Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
                 Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
@@ -242,6 +247,7 @@ namespace ParkNews.Controllers
                 article.Content,
                 article.PublishDate,
                 article.IsFeatured,
+                article.IsPublished,
                 article.FeaturedImageUrl,
                 Category = article.Category != null ? new { article.Category.Id, article.Category.Name } : null,
                 Author = article.Author != null ? new { article.Author.Id, article.Author.FullName, article.Author.Email } : null,
@@ -285,6 +291,7 @@ namespace ParkNews.Controllers
                 a.Content,
                 a.PublishDate,
                 a.IsFeatured,
+                a.IsPublished,
                 a.FeaturedImageUrl,
                 Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
                 Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
@@ -315,7 +322,8 @@ namespace ParkNews.Controllers
                 Content = articleDto.Content,
                 Summary = articleDto.Description,
                 FeaturedImageUrl = articleDto.ImageUrl,
-                IsFeatured = articleDto.IsPublished,
+                IsFeatured = articleDto.IsFeatured,
+                IsPublished = articleDto.IsPublished,
                 CategoryId = articleDto.CategoryId,
                 PublishDate = DateTime.UtcNow,
                 Slug = GenerateSlug(articleDto.Title)
@@ -374,7 +382,8 @@ namespace ParkNews.Controllers
             article.Content = articleDto.Content;
             article.Summary = articleDto.Description;
             article.FeaturedImageUrl = articleDto.ImageUrl;
-            article.IsFeatured = articleDto.IsPublished;
+            article.IsFeatured = articleDto.IsFeatured;
+            article.IsPublished = articleDto.IsPublished;
             article.CategoryId = articleDto.CategoryId;
             article.Slug = GenerateSlug(articleDto.Title);
 

@@ -4,6 +4,12 @@ import { Observable } from 'rxjs';
 import { API_URLS } from './api-urls';
 import { SourceDTO } from '../admin/source-manager/source-manager.component';
 
+export interface SourceUpdateDTO {
+  name: string;
+  websiteUrl: string;
+  logoUrl: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -38,6 +44,10 @@ export class SourceService {
 
   update(id: number, source: SourceDTO): Observable<SourceDTO> {
     return this.http.put<SourceDTO>(`${this.apiUrl}/${id}`, source);
+  }
+
+  updateBasic(id: number, source: SourceUpdateDTO): Observable<any> {
+    return this.http.put(`${this.apiUrl}/update-basic/${id}`, source);
   }
 
   delete(id: number): Observable<any> {
