@@ -19,7 +19,9 @@ export interface Article {
   Content: string;
   PublishDate: string;
   IsFeatured: boolean;
+  IsPublished: boolean;
   FeaturedImageUrl: string;
+  CreatedByUserId?: string;
   Category?: {
     $id: string;
     Id: number;
@@ -57,7 +59,10 @@ export interface CreateArticleDTO {
   Description: string;
   ImageUrl: string;
   IsPublished: boolean;
+  IsFeatured: boolean;
   CategoryId: number;
+  AuthorId: number;
+  SourceId?: number;
   Tags: string[];
 }
 
@@ -126,6 +131,28 @@ export class ArticleService {
       }),
       // If the API call fails, fallback to filtering locally
       // This is handled in the error callback in the component
+    );
+  }
+
+  getByUser(userId: string): Observable<Article[]> {
+    return this.http.get<ArticleResponse>(`${this.apiUrl}/byuser/${userId}`).pipe(
+      map(response => {
+        if (response && response.$values && Array.isArray(response.$values)) {
+          return response.$values;
+        }
+        return [];
+      })
+    );
+  }
+
+  getByEditor(userId: string): Observable<Article[]> {
+    return this.http.get<ArticleResponse>(`${this.apiUrl}/byeditor/${userId}`).pipe(
+      map(response => {
+        if (response && response.$values && Array.isArray(response.$values)) {
+          return response.$values;
+        }
+        return [];
+      })
     );
   }
 

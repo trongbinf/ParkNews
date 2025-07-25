@@ -49,7 +49,7 @@
 }
 
 .form-control {
-  width: 100%;
+  width: 94%;
   padding: 0.75rem;
   font-size: 1rem;
   line-height: 1.5;
@@ -135,6 +135,40 @@
 .divider {
   margin: 0 0.5rem;
   color: #444;
+}
+
+.password-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-group .form-control {
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: #4CAF50;
+}
+
+.password-toggle:focus {
+  outline: none;
 }
 
 @media (max-width: 576px) {

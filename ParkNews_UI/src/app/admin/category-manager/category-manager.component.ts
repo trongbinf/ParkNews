@@ -4,12 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { BaseManagerComponent } from '../base-manager.component';
-import { CategoryService } from '../../services/category.service';
+import { CategoryService, Category, CreateCategoryDTO, UpdateCategoryDTO } from '../../services/category.service';
+import { AuthService } from '../../services/auth.service';
 
 export interface CategoryDTO {
   Id?: number;
   Name: string;
   Description?: string;
+  ParentId?: number | null;
 }
 
 @Component({
@@ -20,10 +22,11 @@ export interface CategoryDTO {
   styleUrls: ['./category-manager.component.css']
 })
 export class CategoryManagerComponent extends BaseManagerComponent<CategoryDTO> {
-  categories: CategoryDTO[] = [];
+  categories: Category[] = [];
 
   constructor(
     private categoryService: CategoryService,
+    private authService: AuthService,
     toastr: ToastrService
   ) {
     super(toastr);
@@ -33,18 +36,8 @@ export class CategoryManagerComponent extends BaseManagerComponent<CategoryDTO> 
     this.loading = true;
     this.categoryService.getAll().subscribe({
       next: (response: any) => {
-        let categories: CategoryDTO[] = [];
-        
-        if (response && response.$values) {
-          categories = response.$values;
-        } else if (Array.isArray(response)) {
-          categories = response;
-        } else {
-          console.error('Unexpected API response format:', response);
-        }
-        
-        this.categories = categories;
-        this.items = categories;
+        this.categories = response;
+        this.items = response;
         this.calculateTotalPages();
         this.loading = false;
       },
@@ -60,18 +53,8 @@ export class CategoryManagerComponent extends BaseManagerComponent<CategoryDTO> 
     this.loading = true;
     this.categoryService.search(query).subscribe({
       next: (response: any) => {
-        let categories: CategoryDTO[] = [];
-        
-        if (response && response.$values) {
-          categories = response.$values;
-        } else if (Array.isArray(response)) {
-          categories = response;
-        } else {
-          console.error('Unexpected API response format:', response);
-        }
-        
-        this.categories = categories;
-        this.items = categories;
+        this.categories = response;
+        this.items = response;
         this.calculateTotalPages();
         this.loading = false;
       },
@@ -98,8 +81,34 @@ export class CategoryManagerComponent extends BaseManagerComponent<CategoryDTO> 
     return true;
   }
 
+  // Helper method to generate a slug from a name
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-'); // Replace multiple hyphens with a single one
+  }
+
   override createItem(): void {
-    this.categoryService.create(this.editData).subscribe({
+    // Check if user is admin
+    if (!this.authService.isAdmin()) {
+      this.toastr.error('Bạn không có quyền thực hiện thao tác này', 'Lỗi phân quyền');
+      return;
+    }
+    
+    // Create a proper category object that matches the backend Category model
+    const categoryData: CreateCategoryDTO = {
+      Name: this.editData.Name,
+      Description: this.editData.Description || '',
+      Slug: this.generateSlug(this.editData.Name),
+      ParentCategoryId: this.editData.ParentId
+    };
+
+    console.log('Sending category data:', categoryData);
+    console.log('Auth token:', this.authService.getToken());
+
+    this.categoryService.create(categoryData).subscribe({
       next: () => {
         this.toastr.success('Danh mục đã được tạo thành công');
         this.loadItems();
@@ -108,17 +117,34 @@ export class CategoryManagerComponent extends BaseManagerComponent<CategoryDTO> 
       },
       error: (error) => {
         console.error('Error creating category', error);
-        this.toastr.error('Không thể tạo danh mục');
+        console.error('Error details:', error.error);
+        this.toastr.error('Không thể tạo danh mục: ' + (error.error?.message || error.message || 'Unknown error'));
         this.saving = false;
       }
     });
   }
 
   override updateItem(): void {
+    // Check if user is admin
+    if (!this.authService.isAdmin()) {
+      this.toastr.error('Bạn không có quyền thực hiện thao tác này', 'Lỗi phân quyền');
+      return;
+    }
+    
     if (!this.editData.Id) return;
 
     const id = typeof this.editData.Id === 'string' ? parseInt(this.editData.Id) : this.editData.Id;
-    this.categoryService.update(id, this.editData).subscribe({
+    
+    // Create a proper category object that matches the backend Category model
+    const categoryData: UpdateCategoryDTO = {
+      Id: id,
+      Name: this.editData.Name,
+      Description: this.editData.Description || '',
+      Slug: this.generateSlug(this.editData.Name),
+      ParentCategoryId: this.editData.ParentId
+    };
+
+    this.categoryService.update(id, categoryData).subscribe({
       next: () => {
         this.toastr.success('Danh mục đã được cập nhật thành công');
         this.loadItems();

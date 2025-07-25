@@ -19,6 +19,8 @@ namespace ParkNews.Models.DTOs
         public string AuthorName { get; set; }
         public int CategoryId { get; set; }
         public string CategoryName { get; set; }
+        public int? SourceId { get; set; }
+        public string SourceName { get; set; }
         public List<string> Tags { get; set; }
     }
 
@@ -31,6 +33,8 @@ namespace ParkNews.Models.DTOs
         public bool IsPublished { get; set; } = true;
         public bool IsFeatured { get; set; }
         public int CategoryId { get; set; }
+        public int AuthorId { get; set; }
+        public int? SourceId { get; set; }
         public List<string> Tags { get; set; }
     }
 
@@ -43,6 +47,8 @@ namespace ParkNews.Models.DTOs
         public bool IsPublished { get; set; }
         public bool IsFeatured { get; set; }
         public int CategoryId { get; set; }
+        public int AuthorId { get; set; }
+        public int? SourceId { get; set; }
         public List<string> Tags { get; set; }
     }
 }

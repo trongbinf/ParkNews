@@ -13,7 +13,7 @@ namespace ParkNews.Services
             _configuration = configuration;
         }
 
-        public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = false)
+        public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = true)
         {
             try
             {

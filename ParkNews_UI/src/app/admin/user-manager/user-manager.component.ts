@@ -237,6 +237,15 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
   toggleUserStatus(user: UserDTO): void {
     if (!user.Id) return;
 
+    // Get current user
+    const currentUser = this.userService.getCurrentUser();
+    
+    // Prevent admins from deactivating their own accounts
+    if (currentUser && currentUser.id === user.Id) {
+      this.toastr.error('Bạn không thể tắt trạng thái hoạt động của tài khoản chính mình', 'Không được phép');
+      return;
+    }
+
     this.userService.toggleUserStatus(user.Id).subscribe({
       next: () => {
         user.IsActive = !user.IsActive;

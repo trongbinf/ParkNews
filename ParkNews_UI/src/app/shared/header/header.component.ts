@@ -24,6 +24,7 @@ import { AuthService } from '../../services/auth.service';
               <li class="nav-item"><a routerLink="/category" routerLinkActive="active">Danh mục</a></li>
               <li class="nav-item"><a routerLink="/article-list" routerLinkActive="active">Bài viết</a></li>
               <li class="nav-item" *ngIf="isAdmin"><a routerLink="/admin/dashboard" routerLinkActive="active">Dashboard</a></li>
+              <li class="nav-item" *ngIf="isEditor"><a routerLink="/editor/articles" routerLinkActive="active">Quản lý bài viết</a></li>
             </ul>
           </nav>
           
@@ -48,6 +49,7 @@ import { AuthService } from '../../services/auth.service';
                 <div class="user-dropdown">
                   <ul class="dropdown-menu">
                     <li *ngIf="isAdmin"><a routerLink="/admin/dashboard">Dashboard</a></li>
+                    <li *ngIf="isEditor"><a routerLink="/editor/articles">Quản lý bài viết</a></li>
                     <li><a routerLink="/profile">Hồ sơ</a></li>
                     <li><a href="javascript:void(0)" (click)="logout()">Đăng xuất</a></li>
                   </ul>
@@ -451,6 +453,7 @@ import { AuthService } from '../../services/auth.service';
 export class HeaderComponent implements OnInit {
   isLoggedIn = false;
   isAdmin = false;
+  isEditor = false;
   currentUser: any = null;
   isSearchOpen = false;
   searchTerm = '';
@@ -469,7 +472,8 @@ export class HeaderComponent implements OnInit {
   updateAuthStatus(): void {
     this.isLoggedIn = this.authService.isLoggedIn();
     this.currentUser = this.authService.getCurrentUser();
-    this.isAdmin = localStorage.getItem('isAdmin') === 'true';
+    this.isAdmin = this.authService.isAdmin();
+    this.isEditor = this.authService.isEditor();
   }
   
   getUserDisplayName(): string {

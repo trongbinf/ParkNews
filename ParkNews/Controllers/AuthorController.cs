@@ -43,6 +43,21 @@ namespace ParkNews.Controllers
             return Ok(author);
         }
 
+        // GET: api/Author/byuser/{userId}
+        [HttpGet("byuser/{userId}")]
+        public async Task<ActionResult<Author>> GetAuthorByUserId(string userId)
+        {
+            var author = await _unitOfWork.Authors.GetQueryable()
+                .FirstOrDefaultAsync(a => a.UserId == userId);
+
+            if (author == null)
+            {
+                return NotFound("Không tìm thấy tác giả với ID người dùng này");
+            }
+
+            return Ok(author);
+        }
+
         // POST: api/Author
         [HttpPost]
         [Authorize(Roles = "Admin")]

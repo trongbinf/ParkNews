@@ -47,15 +47,25 @@
 
       <div class="form-group">
         <label for="password">Mật khẩu <span class="required">*</span></label>
-        <input 
-          type="password" 
-          class="form-control" 
-          id="password" 
-          name="password"
-          [(ngModel)]="registerData.password"
-          required
-          minlength="6"
-          #password="ngModel">
+        <div class="password-input-group">
+          <input 
+            [type]="showPassword ? 'text' : 'password'" 
+            class="form-control" 
+            id="password" 
+            name="password"
+            [(ngModel)]="registerData.password"
+            required
+            minlength="6"
+            #password="ngModel">
+          <button 
+            type="button" 
+            class="password-toggle" 
+            (click)="togglePasswordVisibility()" 
+            [attr.aria-label]="showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'"
+          >
+            <i class="fas" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+        </div>
         <div *ngIf="password.invalid && (password.dirty || password.touched)" class="error-message">
           <div *ngIf="password.errors?.['required']">Mật khẩu là bắt buộc</div>
           <div *ngIf="password.errors?.['minlength']">Mật khẩu phải có ít nhất 6 ký tự</div>
@@ -64,14 +74,24 @@
 
       <div class="form-group">
         <label for="confirmPassword">Xác nhận mật khẩu <span class="required">*</span></label>
-        <input 
-          type="password" 
-          class="form-control" 
-          id="confirmPassword" 
-          name="confirmPassword"
-          [(ngModel)]="registerData.confirmPassword"
-          required
-          #confirmPassword="ngModel">
+        <div class="password-input-group">
+          <input 
+            [type]="showConfirmPassword ? 'text' : 'password'" 
+            class="form-control" 
+            id="confirmPassword" 
+            name="confirmPassword"
+            [(ngModel)]="registerData.confirmPassword"
+            required
+            #confirmPassword="ngModel">
+          <button 
+            type="button" 
+            class="password-toggle" 
+            (click)="toggleConfirmPasswordVisibility()" 
+            [attr.aria-label]="showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'"
+          >
+            <i class="fas" [ngClass]="showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+        </div>
         <div *ngIf="confirmPassword.invalid && (confirmPassword.dirty || confirmPassword.touched)" class="error-message">
           <div *ngIf="confirmPassword.errors?.['required']">Xác nhận mật khẩu là bắt buộc</div>
         </div>

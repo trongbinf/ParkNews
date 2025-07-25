@@ -19,13 +19,13 @@ export const adminGuard: CanActivateFn = (route, state) => {
       }
       
       const isAdmin = authService.isAdmin();
-      if (!isAdmin) {
+    if (!isAdmin) {
         toastr.error('Bạn không có quyền truy cập trang này', 'Truy cập bị từ chối');
         router.navigate(['/']);
-        return false;
-      }
+      return false;
+    }
       
-      return true;
+    return true;
     })
   );
 };

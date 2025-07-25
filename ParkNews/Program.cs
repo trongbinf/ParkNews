@@ -159,6 +159,9 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "ParkNews API v1");
         c.RoutePrefix = string.Empty; // Serve Swagger UI at root ("/")
     });
+    
+    // Hiển thị thông tin chi tiết lỗi trong môi trường phát triển
+    app.UseDeveloperExceptionPage();
 }
 
 // Use CORS before other middleware

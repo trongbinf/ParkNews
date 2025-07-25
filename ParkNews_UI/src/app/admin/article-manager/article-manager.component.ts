@@ -8,6 +8,7 @@ import { AuthorService } from '../../services/author.service';
 import { ToastrService } from 'ngx-toastr';
 import { QuillModule } from 'ngx-quill';
 import { TagService } from '../../services/tag.service';
+import { SourceService } from '../../services/source.service';
 
 interface Author {
   Id: number;
@@ -23,6 +24,13 @@ interface Category {
 interface Tag {
   Id: number;
   Name: string;
+}
+
+interface Source {
+  Id: number;
+  Name: string;
+  WebsiteUrl: string;
+  LogoUrl?: string;
 }
 
 @Component({
@@ -43,6 +51,9 @@ export class ArticleManagerComponent implements OnInit {
   categories: Category[] = [];
   authors: Author[] = [];
   tags: Tag[] = [];
+  filteredTags: Tag[] = [];
+  showTagSuggestions: boolean = false;
+  sources: Source[] = [];
   loading = false;
   saving = false;
   showApprovalModal = false;
@@ -58,6 +69,7 @@ export class ArticleManagerComponent implements OnInit {
     IsFeatured: false,
     CategoryId: null,
     AuthorId: null,
+    SourceId: null,
     Tags: []
   };
   
@@ -110,6 +122,7 @@ export class ArticleManagerComponent implements OnInit {
     private categoryService: CategoryService,
     private authorService: AuthorService,
     private tagService: TagService,
+    private sourceService: SourceService,
     private toastr: ToastrService
   ) {}
 
@@ -118,6 +131,7 @@ export class ArticleManagerComponent implements OnInit {
     this.loadCategories();
     this.loadAuthors();
     this.loadTags();
+    this.loadSources();
   }
 
   loadArticles() {
@@ -210,6 +224,26 @@ export class ArticleManagerComponent implements OnInit {
       error: (err) => {
         console.error('Error loading tags', err);
         this.toastr.error('Không thể tải danh sách thẻ', 'Lỗi');
+      }
+    });
+  }
+
+  loadSources() {
+    this.sourceService.getAll().subscribe({
+      next: (response: any) => {
+        if (response && response.$values) {
+          this.sources = response.$values;
+        } else if (Array.isArray(response)) {
+          this.sources = response;
+        } else {
+          console.error('Unexpected API response format for sources:', response);
+          this.sources = [];
+        }
+        console.log('Sources loaded:', this.sources);
+      },
+      error: (err) => {
+        console.error('Error loading sources', err);
+        this.toastr.error('Không thể tải danh sách nguồn', 'Lỗi');
       }
     });
   }
@@ -319,6 +353,7 @@ export class ArticleManagerComponent implements OnInit {
       IsPublished: article.IsPublished, // Keep publish status the same
       CategoryId: article.Category?.Id,
       AuthorId: article.Author?.Id,
+      SourceId: article.Source?.Id,
       Tags: article.ArticleTags?.$values?.map((at: any) => at.Tag?.Name) || []
     };
 
@@ -352,6 +387,7 @@ export class ArticleManagerComponent implements OnInit {
       IsPublished: !article.IsPublished, // Toggle the publish status
       CategoryId: article.Category?.Id,
       AuthorId: article.Author?.Id,
+      SourceId: article.Source?.Id,
       Tags: article.ArticleTags?.$values?.map((at: any) => at.Tag?.Name) || []
     };
 
@@ -410,6 +446,7 @@ export class ArticleManagerComponent implements OnInit {
         IsFeatured: article.IsFeatured,
         CategoryId: article.Category?.Id,
         AuthorId: article.Author?.Id,
+        SourceId: article.Source?.Id, // Assuming article.Source is available
         Tags: article.ArticleTags?.$values?.map((at: any) => at.Tag?.Name) || []
       };
     } else {
@@ -423,6 +460,7 @@ export class ArticleManagerComponent implements OnInit {
         IsFeatured: false,
         CategoryId: null,
         AuthorId: null,
+        SourceId: null,
         Tags: []
       };
     }
@@ -437,11 +475,46 @@ export class ArticleManagerComponent implements OnInit {
     if (this.newTag.trim() && !this.editData.Tags.includes(this.newTag.trim())) {
       this.editData.Tags.push(this.newTag.trim());
       this.newTag = '';
+      this.showTagSuggestions = false;
     }
   }
 
   removeTag(tag: string) {
     this.editData.Tags = this.editData.Tags.filter((t: string) => t !== tag);
+  }
+
+  // Phương thức lọc tag khi người dùng nhập
+  filterTags() {
+    if (!this.newTag.trim()) {
+      this.filteredTags = [];
+      this.showTagSuggestions = false;
+      return;
+    }
+    
+    const searchTerm = this.newTag.toLowerCase().trim();
+    this.filteredTags = this.tags
+      .filter(tag => tag.Name.toLowerCase().includes(searchTerm))
+      .filter(tag => !this.editData.Tags.includes(tag.Name));
+    
+    this.showTagSuggestions = this.filteredTags.length > 0;
+  }
+
+  // Phương thức chọn tag từ gợi ý
+  selectTag(tagName: string) {
+    if (!this.editData.Tags.includes(tagName)) {
+      this.editData.Tags.push(tagName);
+      this.newTag = '';
+      this.showTagSuggestions = false;
+      this.filteredTags = [];
+    }
+  }
+
+  // Phương thức ẩn gợi ý khi click ra ngoài
+  hideTagSuggestions() {
+    // Sử dụng setTimeout để đảm bảo người dùng có thể click vào gợi ý trước khi nó biến mất
+    setTimeout(() => {
+      this.showTagSuggestions = false;
+    }, 200);
   }
 
   saveArticle(form: NgForm) {

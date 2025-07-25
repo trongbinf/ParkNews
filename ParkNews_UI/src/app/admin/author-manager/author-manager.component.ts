@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { BaseManagerComponent } from '../base-manager.component';
-import { AuthorService } from '../../services/author.service';
+import { AuthorService, Author, CreateAuthorDTO, UpdateAuthorDTO } from '../../services/author.service';
+import { AuthService } from '../../services/auth.service';
 
 export interface AuthorDTO {
   Id?: number;
@@ -22,10 +23,11 @@ export interface AuthorDTO {
   styleUrls: ['./author-manager.component.css']
 })
 export class AuthorManagerComponent extends BaseManagerComponent<AuthorDTO> {
-  authors: AuthorDTO[] = [];
+  authors: Author[] = [];
 
   constructor(
     private authorService: AuthorService,
+    private authService: AuthService,
     toastr: ToastrService
   ) {
     super(toastr);
@@ -35,18 +37,8 @@ export class AuthorManagerComponent extends BaseManagerComponent<AuthorDTO> {
     this.loading = true;
     this.authorService.getAll().subscribe({
       next: (response: any) => {
-        let authors: AuthorDTO[] = [];
-        
-        if (response && response.$values) {
-          authors = response.$values;
-        } else if (Array.isArray(response)) {
-          authors = response;
-        } else {
-          console.error('Unexpected API response format:', response);
-        }
-        
-        this.authors = authors;
-        this.items = authors;
+        this.authors = response;
+        this.items = response;
         this.calculateTotalPages();
         this.loading = false;
       },
@@ -62,18 +54,8 @@ export class AuthorManagerComponent extends BaseManagerComponent<AuthorDTO> {
     this.loading = true;
     this.authorService.search(query).subscribe({
       next: (response: any) => {
-        let authors: AuthorDTO[] = [];
-        
-        if (response && response.$values) {
-          authors = response.$values;
-        } else if (Array.isArray(response)) {
-          authors = response;
-        } else {
-          console.error('Unexpected API response format:', response);
-        }
-        
-        this.authors = authors;
-        this.items = authors;
+        this.authors = response;
+        this.items = response;
         this.calculateTotalPages();
         this.loading = false;
       },
@@ -107,7 +89,24 @@ export class AuthorManagerComponent extends BaseManagerComponent<AuthorDTO> {
   }
 
   override createItem(): void {
-    this.authorService.create(this.editData).subscribe({
+    // Check if user is admin
+    if (!this.authService.isAdmin()) {
+      this.toastr.error('Bạn không có quyền thực hiện thao tác này', 'Lỗi phân quyền');
+      return;
+    }
+    
+    // Create a proper author object that matches the backend CreateAuthorDTO model
+    const authorData: CreateAuthorDTO = {
+      FullName: this.editData.FullName,
+      Email: this.editData.Email,
+      Bio: this.editData.Bio || '',
+      AvatarUrl: this.editData.AvatarUrl || ''
+    };
+
+    console.log('Sending author data:', authorData);
+    console.log('Auth token:', this.authService.getToken());
+
+    this.authorService.create(authorData).subscribe({
       next: () => {
         this.toastr.success('Tác giả đã được tạo thành công');
         this.loadItems();
@@ -116,17 +115,34 @@ export class AuthorManagerComponent extends BaseManagerComponent<AuthorDTO> {
       },
       error: (error) => {
         console.error('Error creating author', error);
-        this.toastr.error('Không thể tạo tác giả');
+        console.error('Error details:', error.error);
+        this.toastr.error('Không thể tạo tác giả: ' + (error.error?.message || error.message || 'Unknown error'));
         this.saving = false;
       }
     });
   }
 
   override updateItem(): void {
+    // Check if user is admin
+    if (!this.authService.isAdmin()) {
+      this.toastr.error('Bạn không có quyền thực hiện thao tác này', 'Lỗi phân quyền');
+      return;
+    }
+    
     if (!this.editData.Id) return;
 
     const id = typeof this.editData.Id === 'string' ? parseInt(this.editData.Id) : this.editData.Id;
-    this.authorService.update(id, this.editData).subscribe({
+    
+    // Create a proper author object that matches the backend UpdateAuthorDTO model
+    const authorData: UpdateAuthorDTO = {
+      Id: id,
+      FullName: this.editData.FullName,
+      Email: this.editData.Email,
+      Bio: this.editData.Bio || '',
+      AvatarUrl: this.editData.AvatarUrl || ''
+    };
+
+    this.authorService.update(id, authorData).subscribe({
       next: () => {
         this.toastr.success('Tác giả đã được cập nhật thành công');
         this.loadItems();

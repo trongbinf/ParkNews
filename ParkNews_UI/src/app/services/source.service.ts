@@ -5,9 +5,9 @@ import { API_URLS } from './api-urls';
 import { SourceDTO } from '../admin/source-manager/source-manager.component';
 
 export interface SourceUpdateDTO {
-  name: string;
-  websiteUrl: string;
-  logoUrl: string;
+  Name: string;
+  WebsiteUrl: string;
+  LogoUrl: string;
 }
 
 @Injectable({

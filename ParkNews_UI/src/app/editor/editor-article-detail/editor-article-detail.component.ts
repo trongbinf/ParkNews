@@ -9,6 +9,7 @@ import { TagService } from '../../services/tag.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { QuillModule } from 'ngx-quill';
+import { AuthorService } from '../../services/author.service';
 
 @Component({
   selector: 'app-editor-article-detail',
@@ -30,6 +31,7 @@ export class EditorArticleDetailComponent implements OnInit {
     FeaturedImageUrl: '',
     IsPublished: false,
     CategoryId: null,
+    AuthorId: null,
     SourceId: null,
     Tags: []
   };
@@ -37,6 +39,7 @@ export class EditorArticleDetailComponent implements OnInit {
   categories: any[] = [];
   sources: any[] = [];
   tags: any[] = [];
+  authors: any[] = [];
   filteredTags: any[] = [];
   newTag = '';
   
@@ -74,26 +77,28 @@ export class EditorArticleDetailComponent implements OnInit {
     private sourceService: SourceService,
     private tagService: TagService,
     private authService: AuthService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private authorService: AuthorService
   ) {}
 
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
     
+    // Load necessary data
     this.loadCategories();
     this.loadSources();
     this.loadTags();
+    this.loadAuthors();
     
     // Check if we're editing an existing article or creating a new one
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id && id !== 'new') {
-        this.articleId = +id;
+    this.route.params.subscribe(params => {
+      if (params['id']) {
+        this.articleId = +params['id'];
         this.isNew = false;
         this.loadArticle(this.articleId);
       } else {
         this.isNew = true;
-        // Set default values for a new article
+        this.loading = false;
         this.article = {
           Title: '',
           Content: '',
@@ -101,6 +106,7 @@ export class EditorArticleDetailComponent implements OnInit {
           FeaturedImageUrl: '',
           IsPublished: false,
           CategoryId: null,
+          AuthorId: null,
           SourceId: null,
           Tags: []
         };
@@ -194,6 +200,25 @@ export class EditorArticleDetailComponent implements OnInit {
     });
   }
 
+  loadAuthors() {
+    this.authorService.getAll().subscribe({
+      next: (response: any) => {
+        if (response && response.$values) {
+          this.authors = response.$values;
+        } else if (Array.isArray(response)) {
+          this.authors = response;
+        } else {
+          console.error('Unexpected API response format for authors:', response);
+          this.authors = [];
+        }
+      },
+      error: (err) => {
+        console.error('Error loading authors', err);
+        this.toastr.error('Không thể tải danh sách tác giả', 'Lỗi');
+      }
+    });
+  }
+
   onTagInput() {
     if (!this.newTag) {
       this.filteredTags = [];
@@ -249,26 +274,25 @@ export class EditorArticleDetailComponent implements OnInit {
     if (!this.validateForm()) {
       return;
     }
-    
+
     this.saving = true;
-    
-    // Always set the current user as the author
-    const authorId = this.currentUser.id;
-    
+
     const articleData = {
       Title: this.article.Title.trim(),
       Content: this.article.Content.trim(),
       Description: this.article.Summary?.trim() || '',
       ImageUrl: this.article.FeaturedImageUrl?.trim() || '',
       IsPublished: this.article.IsPublished,
+      IsFeatured: false, // Editor không thể đặt bài viết làm nổi bật
       CategoryId: this.article.CategoryId,
-      AuthorId: authorId,
-      SourceId: this.article.SourceId,
+      AuthorId: this.article.AuthorId,
+      SourceId: this.article.SourceId || null,
       Tags: this.article.Tags || []
     };
-    
+
+    console.log('Sending article data:', articleData);
+
     if (this.isNew) {
-      // Create new article
       this.articleService.create(articleData).subscribe({
         next: (response) => {
           this.toastr.success('Bài viết đã được tạo thành công', 'Thành công');
@@ -277,12 +301,11 @@ export class EditorArticleDetailComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error creating article', err);
-          this.toastr.error('Không thể tạo bài viết', 'Lỗi');
+          this.toastr.error(err.error?.title || 'Không thể tạo bài viết', 'Lỗi');
           this.saving = false;
         }
       });
     } else {
-      // Update existing article
       this.articleService.update(this.articleId!, articleData).subscribe({
         next: () => {
           this.toastr.success('Bài viết đã được cập nhật thành công', 'Thành công');
@@ -291,7 +314,7 @@ export class EditorArticleDetailComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error updating article', err);
-          this.toastr.error('Không thể cập nhật bài viết', 'Lỗi');
+          this.toastr.error(err.error?.title || 'Không thể cập nhật bài viết', 'Lỗi');
           this.saving = false;
         }
       });

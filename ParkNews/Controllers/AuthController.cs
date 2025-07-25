@@ -51,6 +51,12 @@ namespace ParkNews.Controllers
                 if (user == null || !await _userManager.CheckPasswordAsync(user, loginModel.Password))
                     return Unauthorized(new { message = "Invalid credentials" });
 
+                // Check if the user account is active
+                if (!user.IsActive)
+                {
+                    return Unauthorized(new { message = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
+                }
+
                 // Get user roles
                 var userRoles = await _userManager.GetRolesAsync(user);
 
@@ -100,7 +106,8 @@ namespace ParkNews.Controllers
                     FirstName = model.FirstName ?? string.Empty,
                     LastName = model.LastName ?? string.Empty,
                     CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
+                    EmailConfirmed = true // Auto-confirm email
                 };
                 var result = await _userManager.CreateAsync(user, model.Password);
                 if (!result.Succeeded)
@@ -131,14 +138,16 @@ namespace ParkNews.Controllers
             {
                 if (string.IsNullOrWhiteSpace(model.Email))
                     return BadRequest(new { message = "Email is required." });
+                
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user == null)
                     return NotFound(new { message = "User not found" });
+                
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                 var resetLink = $"{Request.Scheme}://{Request.Host}/reset-password?email={user.Email}&token={System.Net.WebUtility.UrlEncode(token)}";
-                var subject = "ParkNews Password Reset";
-                var body = $"Click the link below to reset your password:<br/><a href='{resetLink}'>{resetLink}</a>";
-                await _emailService.SendEmailAsync(user.Email ?? string.Empty, subject, body);
+                
+                await _emailService.SendPasswordResetEmailAsync(user.Email ?? string.Empty, resetLink);
+                
                 return Ok(new { message = "Password reset email sent." });
             }
             catch (Exception ex)

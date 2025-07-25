@@ -10,13 +10,22 @@ export interface TagResponse {
 }
 
 export interface Tag {
-  $id: string;
-  Id: number;
+  $id?: string;
+  Id?: number;
   Name: string;
-  ArticleTags?: {
-    $id: string;
-    $values: any[];
-  } | null;
+  Slug?: string;
+}
+
+export interface CreateTagDTO {
+  Name: string;
+  Description: string;
+  Slug: string;
+}
+
+export interface UpdateTagDTO {
+  Name: string;
+  Description: string;
+  Slug: string;
 }
 
 @Injectable({
@@ -26,8 +35,15 @@ export class TagService {
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<Tag[]> {
-    return this.http.get<TagResponse>(`${API_URLS.tag}`).pipe(
-      map(response => response.$values)
+    return this.http.get<any>(`${API_URLS.tag}`).pipe(
+      map(response => {
+        if (response && response.$values) {
+          return response.$values;
+        } else if (Array.isArray(response)) {
+          return response;
+        }
+        return [];
+      })
     );
   }
 
@@ -36,16 +52,23 @@ export class TagService {
   }
 
   search(term: string): Observable<Tag[]> {
-    return this.http.get<TagResponse>(`${API_URLS.tag}/search?term=${term}`).pipe(
-      map(response => response.$values)
+    return this.http.get<any>(`${API_URLS.tag}/search?q=${term}`).pipe(
+      map(response => {
+        if (response && response.$values) {
+          return response.$values;
+        } else if (Array.isArray(response)) {
+          return response;
+        }
+        return [];
+      })
     );
   }
 
-  create(tag: Omit<Tag, '$id' | 'Id'>): Observable<Tag> {
+  create(tag: CreateTagDTO): Observable<Tag> {
     return this.http.post<Tag>(`${API_URLS.tag}`, tag);
   }
 
-  update(id: number, tag: Omit<Tag, '$id' | 'Id'>): Observable<Tag> {
+  update(id: number, tag: UpdateTagDTO): Observable<Tag> {
     return this.http.put<Tag>(`${API_URLS.tag}/${id}`, tag);
   }
 

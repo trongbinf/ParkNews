@@ -4,12 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { BaseManagerComponent } from '../base-manager.component';
-import { TagService } from '../../services/tag.service';
+import { TagService, Tag, CreateTagDTO, UpdateTagDTO } from '../../services/tag.service';
 
 export interface TagDTO {
   Id?: number;
   Name: string;
   Description?: string;
+  Slug?: string;
 }
 
 @Component({
@@ -99,7 +100,14 @@ export class TagManagerComponent extends BaseManagerComponent<TagDTO> {
   }
 
   override createItem(): void {
-    this.tagService.create(this.editData).subscribe({
+    // Create a proper tag object that matches the backend CreateTagDTO model
+    const tagData: CreateTagDTO = {
+      Name: this.editData.Name,
+      Description: this.editData.Description || '',
+      Slug: this.generateSlug(this.editData.Name)
+    };
+
+    this.tagService.create(tagData).subscribe({
       next: () => {
         this.toastr.success('Tag đã được tạo thành công');
         this.loadItems();
@@ -118,7 +126,15 @@ export class TagManagerComponent extends BaseManagerComponent<TagDTO> {
     if (!this.editData.Id) return;
 
     const id = typeof this.editData.Id === 'string' ? parseInt(this.editData.Id) : this.editData.Id;
-    this.tagService.update(id, this.editData).subscribe({
+    
+    // Create a proper tag object that matches the backend UpdateTagDTO model
+    const tagData: UpdateTagDTO = {
+      Name: this.editData.Name,
+      Description: this.editData.Description || '',
+      Slug: this.generateSlug(this.editData.Name)
+    };
+
+    this.tagService.update(id, tagData).subscribe({
       next: () => {
         this.toastr.success('Tag đã được cập nhật thành công');
         this.loadItems();
@@ -149,5 +165,14 @@ export class TagManagerComponent extends BaseManagerComponent<TagDTO> {
         this.showDeleteModal = false;
       }
     });
+  }
+
+  // Helper method to generate a slug from a name
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-'); // Replace multiple hyphens with a single one
   }
 }

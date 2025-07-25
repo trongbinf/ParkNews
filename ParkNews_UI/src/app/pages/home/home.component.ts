@@ -49,19 +49,22 @@ export class HomeComponent implements OnInit {
       console.log('Articles loaded:', articles);
       
       if (articles.length > 0) {
+        // Lọc bỏ các bài viết chưa xuất bản
+        const publishedArticles = articles.filter(article => article.IsPublished);
+        
         // Featured articles
-        this.featuredArticles = articles.filter(article => article.IsFeatured).slice(0, 5);
+        this.featuredArticles = publishedArticles.filter(article => article.IsFeatured).slice(0, 5);
         if (this.featuredArticles.length === 0) {
-          this.featuredArticles = articles.slice(0, 5);
+          this.featuredArticles = publishedArticles.slice(0, 5);
         }
         
         // Latest articles
-        this.latestArticles = [...articles]
+        this.latestArticles = [...publishedArticles]
           .sort((a, b) => new Date(b.PublishDate).getTime() - new Date(a.PublishDate).getTime())
           .slice(0, 8);
         
         // Trending articles (for now, just use latest)
-        this.trendingArticles = articles.slice(0, 4);
+        this.trendingArticles = publishedArticles.slice(0, 4);
       }
     });
     

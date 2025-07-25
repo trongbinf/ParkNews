@@ -15,17 +15,17 @@ export const editorGuard: CanActivateFn = (route, state) => {
       if (!isAuthenticated) {
         toastr.error('Bạn cần đăng nhập để truy cập trang này', 'Truy cập bị từ chối');
         router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
-        return false;
-      }
-      
+      return false;
+    }
+    
       const isEditor = authService.isEditor();
-      if (!isEditor) {
+    if (!isEditor) {
         toastr.error('Bạn không có quyền truy cập trang này', 'Truy cập bị từ chối');
         router.navigate(['/']);
-        return false;
-      }
-      
-      return true;
+      return false;
+    }
+    
+    return true;
     })
   );
 }; 

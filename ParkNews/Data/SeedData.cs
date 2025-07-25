@@ -164,37 +164,46 @@ namespace ParkNews.Data
             // Seed Authors
             if (!unitOfWork.Authors.GetQueryable().Any())
             {
+                var adminUserId = adminUser.Id;
+                var editorUserId = editorUser.Id;
+                var readerUserId = readerUser.Id;
+                
                 var authors = new List<Author>
                 {
                     new Author { 
                         FullName = "Nguyễn Văn An", 
                         Email = "nguyenvanan@parknews.com", 
                         Bio = "Phóng viên thể thao với 10 năm kinh nghiệm",
-                        AvatarUrl = "https://via.placeholder.com/150/FF6B6B/FFFFFF?text=NV"
+                        AvatarUrl = "https://via.placeholder.com/150/FF6B6B/FFFFFF?text=NV",
+                        UserId = adminUserId
                     },
                     new Author { 
                         FullName = "Trần Thị Bình", 
                         Email = "tranthibinh@parknews.com", 
                         Bio = "Chuyên gia công nghệ và AI",
-                        AvatarUrl = "https://via.placeholder.com/150/4ECDC4/FFFFFF?text=TT"
+                        AvatarUrl = "https://via.placeholder.com/150/4ECDC4/FFFFFF?text=TT",
+                        UserId = editorUserId
                     },
                     new Author { 
                         FullName = "Lê Văn Cường", 
                         Email = "levancuong@parknews.com", 
                         Bio = "Phóng viên kinh tế và tài chính",
-                        AvatarUrl = "https://via.placeholder.com/150/45B7D1/FFFFFF?text=LC"
+                        AvatarUrl = "https://via.placeholder.com/150/45B7D1/FFFFFF?text=LC",
+                        UserId = readerUserId
                     },
                     new Author { 
                         FullName = "Phạm Thị Dung", 
                         Email = "phamthidung@parknews.com", 
                         Bio = "Phóng viên giải trí và văn hóa",
-                        AvatarUrl = "https://via.placeholder.com/150/96CEB4/FFFFFF?text=PD"
+                        AvatarUrl = "https://via.placeholder.com/150/96CEB4/FFFFFF?text=PD",
+                        UserId = adminUserId
                     },
                     new Author { 
                         FullName = "Hoàng Văn Em", 
                         Email = "hoangvanem@parknews.com", 
                         Bio = "Chuyên gia sức khỏe và y tế",
-                        AvatarUrl = "https://via.placeholder.com/150/FFEAA7/FFFFFF?text=HE"
+                        AvatarUrl = "https://via.placeholder.com/150/FFEAA7/FFFFFF?text=HE",
+                        UserId = editorUserId
                     }
                 };
 
@@ -260,10 +269,12 @@ namespace ParkNews.Data
                         Content = "<p>Trong trận đấu diễn ra tối qua, đội tuyển Việt Nam đã thể hiện sự vượt trội về mặt kỹ thuật và chiến thuật...</p><p>Hai bàn thắng được ghi bởi Nguyễn Văn Quyết và Nguyễn Công Phượng...</p>",
                         PublishDate = DateTime.Now.AddDays(-5),
                         IsFeatured = true,
+                        IsPublished = true,
                         CategoryId = categories.First(c => c.Name == "Thể thao").Id,
                         AuthorId = authors.First(a => a.FullName == "Nguyễn Văn An").Id,
                         SourceId = sources.First(s => s.Name == "VnExpress").Id,
-                        FeaturedImageUrl = "https://via.placeholder.com/800x400/FF6B6B/FFFFFF?text=VietNam+vs+ThaiLan"
+                        FeaturedImageUrl = "https://via.placeholder.com/800x400/FF6B6B/FFFFFF?text=VietNam+vs+ThaiLan",
+                        CreatedByUserId = adminUser.Id // Admin đăng bài này
                     },
                     new Article {
                         Title = "AI ChatGPT-5 sẽ ra mắt vào cuối năm 2024",
@@ -272,10 +283,12 @@ namespace ParkNews.Data
                         Content = "<p>OpenAI đã chính thức công bố kế hoạch ra mắt ChatGPT-5 vào cuối năm 2024...</p><p>Phiên bản mới sẽ có khả năng hiểu và xử lý thông tin tốt hơn nhiều so với ChatGPT-4...</p>",
                         PublishDate = DateTime.Now.AddDays(-3),
                         IsFeatured = true,
+                        IsPublished = true,
                         CategoryId = categories.First(c => c.Name == "Công nghệ").Id,
                         AuthorId = authors.First(a => a.FullName == "Trần Thị Bình").Id,
                         SourceId = sources.First(s => s.Name == "Tuổi Trẻ").Id,
-                        FeaturedImageUrl = "https://via.placeholder.com/800x400/4ECDC4/FFFFFF?text=ChatGPT-5"
+                        FeaturedImageUrl = "https://via.placeholder.com/800x400/4ECDC4/FFFFFF?text=ChatGPT-5",
+                        CreatedByUserId = editorUser.Id // Editor đăng bài này
                     },
                     new Article {
                         Title = "Chứng khoán Việt Nam tăng mạnh sau thông tin tích cực",
@@ -284,10 +297,12 @@ namespace ParkNews.Data
                         Content = "<p>Thị trường chứng khoán Việt Nam đã có phiên giao dịch tích cực với Vn-Index tăng 20.5 điểm...</p><p>Các cổ phiếu ngân hàng và bất động sản dẫn đầu đà tăng...</p>",
                         PublishDate = DateTime.Now.AddDays(-2),
                         IsFeatured = false,
+                        IsPublished = true,
                         CategoryId = categories.First(c => c.Name == "Kinh tế").Id,
                         AuthorId = authors.First(a => a.FullName == "Lê Văn Cường").Id,
                         SourceId = sources.First(s => s.Name == "Thanh Niên").Id,
-                        FeaturedImageUrl = "https://via.placeholder.com/800x400/45B7D1/FFFFFF?text=ChungKhoan"
+                        FeaturedImageUrl = "https://via.placeholder.com/800x400/45B7D1/FFFFFF?text=ChungKhoan",
+                        CreatedByUserId = editorUser.Id // Editor đăng bài này
                     },
                     new Article {
                         Title = "Phim Việt Nam 'Bố già' đạt doanh thu kỷ lục",
@@ -296,10 +311,12 @@ namespace ParkNews.Data
                         Content = "<p>Bộ phim 'Bố già' của đạo diễn Trấn Thành đã đạt doanh thu hơn 400 tỷ đồng...</p><p>Phim nhận được nhiều đánh giá tích cực từ giới chuyên môn và khán giả...</p>",
                         PublishDate = DateTime.Now.AddDays(-1),
                         IsFeatured = true,
+                        IsPublished = true,
                         CategoryId = categories.First(c => c.Name == "Giải trí").Id,
                         AuthorId = authors.First(a => a.FullName == "Phạm Thị Dung").Id,
                         SourceId = sources.First(s => s.Name == "Dân Trí").Id,
-                        FeaturedImageUrl = "https://via.placeholder.com/800x400/96CEB4/FFFFFF?text=BoGia"
+                        FeaturedImageUrl = "https://via.placeholder.com/800x400/96CEB4/FFFFFF?text=BoGia",
+                        CreatedByUserId = adminUser.Id // Admin đăng bài này
                     },
                     new Article {
                         Title = "Cách phòng ngừa bệnh cúm mùa hiệu quả",
@@ -308,10 +325,12 @@ namespace ParkNews.Data
                         Content = "<p>Bệnh cúm mùa đang có dấu hiệu gia tăng tại nhiều tỉnh thành...</p><p>Các chuyên gia khuyến cáo người dân nên tiêm vắc-xin cúm định kỳ...</p>",
                         PublishDate = DateTime.Now.AddDays(-4),
                         IsFeatured = false,
+                        IsPublished = true,
                         CategoryId = categories.First(c => c.Name == "Sức khỏe").Id,
                         AuthorId = authors.First(a => a.FullName == "Hoàng Văn Em").Id,
                         SourceId = sources.First(s => s.Name == "VietnamNet").Id,
-                        FeaturedImageUrl = "https://via.placeholder.com/800x400/FFEAA7/FFFFFF?text=BenhCum"
+                        FeaturedImageUrl = "https://via.placeholder.com/800x400/FFEAA7/FFFFFF?text=BenhCum",
+                        CreatedByUserId = editorUser.Id // Editor đăng bài này
                     }
                 };
 

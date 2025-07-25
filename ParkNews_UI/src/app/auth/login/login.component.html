@@ -22,15 +22,25 @@
 
       <div class="form-group">
         <label for="password">Mật khẩu</label>
-        <input 
-          type="password" 
-          class="form-control" 
-          id="password" 
-          name="password"
-          [(ngModel)]="loginData.password"
-          required
-          minlength="6"
-          #password="ngModel">
+        <div class="password-input-group">
+          <input 
+            [type]="showPassword ? 'text' : 'password'" 
+            class="form-control" 
+            id="password" 
+            name="password"
+            [(ngModel)]="loginData.password"
+            required
+            minlength="6"
+            #password="ngModel">
+          <button 
+            type="button" 
+            class="password-toggle" 
+            (click)="togglePasswordVisibility()" 
+            [attr.aria-label]="showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'"
+          >
+            <i class="fas" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+          </button>
+        </div>
         <div *ngIf="password.invalid && (password.dirty || password.touched)" class="error-message">
           <div *ngIf="password.errors?.['required']">Mật khẩu là bắt buộc</div>
           <div *ngIf="password.errors?.['minlength']">Mật khẩu phải có ít nhất 6 ký tự</div>

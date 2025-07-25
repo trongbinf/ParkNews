@@ -128,9 +128,9 @@ export class SourceManagerComponent extends BaseManagerComponent<SourceDTO> {
     
     // Create a SourceUpdateDTO object from the editData
     const updateData: SourceUpdateDTO = {
-      name: this.editData.Name,
-      websiteUrl: this.editData.WebsiteUrl,
-      logoUrl: this.editData.LogoUrl || ''
+      Name: this.editData.Name,
+      WebsiteUrl: this.editData.WebsiteUrl,
+      LogoUrl: this.editData.LogoUrl || ''
     };
 
     console.log('Updating source with data:', updateData);

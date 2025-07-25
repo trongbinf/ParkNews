@@ -148,4 +148,17 @@ export class UserService {
   getCurrentUserProfile(): Observable<UserDTO> {
     return this.http.get<UserDTO>(`${this.apiUrl}/profile`);
   }
+
+  getCurrentUser(): any {
+    const userStr = localStorage.getItem('currentUser');
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        console.error('Error parsing user from localStorage', e);
+        return null;
+      }
+    }
+    return null;
+  }
 }

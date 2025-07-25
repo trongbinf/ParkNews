@@ -51,6 +51,22 @@
       </div>
     </div>
     
+    <div class="form-row">
+      <div class="form-group col-md-12">
+        <label for="authorId">Tác giả <span class="required">*</span></label>
+        <select 
+          id="authorId" 
+          name="authorId" 
+          [(ngModel)]="article.AuthorId" 
+          class="form-control" 
+          required
+        >
+          <option [ngValue]="null" disabled>-- Chọn tác giả --</option>
+          <option *ngFor="let author of authors" [ngValue]="author.Id">{{author.FullName}}</option>
+        </select>
+      </div>
+    </div>
+    
     <div class="form-group">
       <label for="summary">Tóm tắt</label>
       <textarea 

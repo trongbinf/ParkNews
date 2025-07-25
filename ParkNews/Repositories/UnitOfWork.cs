@@ -23,6 +23,7 @@ namespace ParkNews.Repositories
             _mapper = mapper;
         }
 
+        public ApplicationDbContext Context => _context;
         public IGenericRepository<Article> Articles => _articles ??= new GenericRepository<Article>(_context);
         public IGenericRepository<Category> Categories => _categories ??= new GenericRepository<Category>(_context);
         public IGenericRepository<Tag> Tags => _tags ??= new GenericRepository<Tag>(_context);

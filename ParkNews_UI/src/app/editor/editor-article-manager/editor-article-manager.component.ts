@@ -32,15 +32,29 @@ export class EditorArticleManagerComponent implements OnInit {
   sources: any[] = [];
   tags: any[] = [];
   filteredTags: any[] = [];
+  filteredArticles: any[] = [];
   loading = false;
   saving = false;
   showModal = false;
+  showVisibilityModal = false;
+  currentArticle: any = null;
   editData: any = {
     tags: []
   };
   searchText = '';
   newTag = '';
   currentUser: any = null;
+  hasVisibilityPermission = false;
+  showTagSuggestions = false;
+  
+  // Filters
+  selectedCategory: number | null = null;
+  selectedStatus: string | null = null;
+  statusOptions = [
+    { value: null, label: 'Tất cả trạng thái' },
+    { value: 'true', label: 'Đã xuất bản' },
+    { value: 'false', label: 'Chưa xuất bản' }
+  ];
   
   // Quill editor configuration
   quillConfig = {
@@ -74,12 +88,16 @@ export class EditorArticleManagerComponent implements OnInit {
     private authorService: AuthorService,
     private sourceService: SourceService,
     private tagService: TagService,
-    private authService: AuthService,
+    public authService: AuthService,
     private toastr: ToastrService
   ) {}
 
   ngOnInit() {
     this.currentUser = this.authService.getCurrentUser();
+    console.log('Current user in editor article manager:', this.currentUser);
+    
+    // Kiểm tra quyền chuyển trạng thái bài viết
+    this.hasVisibilityPermission = this.authService.hasRole('Editor') || this.authService.hasRole('Admin');
     this.loadArticles();
     this.loadCategories();
     this.loadAuthors();
@@ -90,8 +108,12 @@ export class EditorArticleManagerComponent implements OnInit {
   loadArticles() {
     this.loading = true;
     
-    // Only load articles by the current user
-    this.articleService.getByAuthor(this.currentUser.id).subscribe({
+    // Lấy ID người dùng hiện tại
+    const userId = this.currentUser.id;
+    console.log('Loading articles for editor with userId:', userId);
+    
+    // Sử dụng API mới để lấy bài viết theo người dùng có vai trò editor
+    this.articleService.getByEditor(userId).subscribe({
       next: (response: any) => {
         console.log('Original API response:', response);
         
@@ -113,40 +135,35 @@ export class EditorArticleManagerComponent implements OnInit {
         this.articles = articlesData;
         console.log('Processed articles:', this.articles);
         
-        this.totalItems = this.articles.length;
-        this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+        this.applyFilters();
         this.loading = false;
       },
       error: (err: any) => {
         console.error('Error loading articles', err);
         this.toastr.error('Không thể tải danh sách bài viết', 'Lỗi');
         this.loading = false;
-        
-        // Fallback to filtering all articles client-side if the API endpoint fails
-        this.loadAllArticlesAndFilter();
       }
     });
   }
 
-  // Fallback method if the byAuthor endpoint doesn't exist
-  loadAllArticlesAndFilter() {
-    this.articleService.getAll().subscribe({
-      next: (articles: any[]) => {
-        if (this.currentUser && this.currentUser.id) {
-          this.articles = articles.filter(article => 
-            article.Author && article.Author.Id === this.currentUser.id
-          );
-          this.totalItems = this.articles.length;
-          this.totalPages = Math.ceil(this.totalItems / this.pageSize);
-        }
-        this.loading = false;
-      },
-      error: (err: any) => {
-        console.error('Error in fallback article loading', err);
-        this.loading = false;
-      }
-    });
-  }
+  // Đã không cần phương thức này nữa vì chúng ta đã có API chuyên biệt
+  // loadAllArticlesAndFilter() {
+  //   this.articleService.getAll().subscribe({
+  //     next: (articles: any[]) => {
+  //       if (this.currentUser && this.currentUser.id) {
+  //         this.articles = articles.filter(article => 
+  //           article.Author && article.Author.Id === this.currentUser.id
+  //         );
+  //         this.applyFilters();
+  //       }
+  //       this.loading = false;
+  //     },
+  //     error: (err: any) => {
+  //       console.error('Error in fallback article loading', err);
+  //       this.loading = false;
+  //     }
+  //   });
+  // }
 
   loadCategories() {
     this.categoryService.getAll().subscribe({
@@ -247,13 +264,11 @@ export class EditorArticleManagerComponent implements OnInit {
             articlesData = [];
           }
           
-          // Filter to only show articles by the current user
-          this.articles = articlesData.filter(article => 
-            article.Author && article.Author.Id === this.currentUser.id
-          );
+          // Chỉ lọc những bài viết được tạo bởi editor hiện tại
+          // Không cần lọc theo Author.Id nữa vì API đã lọc sẵn
+          this.articles = articlesData;
           
-          this.totalItems = this.articles.length;
-          this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+          this.applyFilters();
           this.loading = false;
         },
         error: (err: any) => {
@@ -267,6 +282,47 @@ export class EditorArticleManagerComponent implements OnInit {
     }
   }
 
+  applyFilters() {
+    let filtered = [...this.articles];
+    console.log('Applying filters to articles:', filtered);
+    
+    // Filter by category if selected
+    if (this.selectedCategory !== null) {
+      filtered = filtered.filter(article => 
+        article.Category?.Id === this.selectedCategory
+      );
+      console.log('After category filter:', filtered);
+    }
+    
+    // Filter by publish status if selected
+    if (this.selectedStatus !== null) {
+      const isPublished = this.selectedStatus === 'true';
+      filtered = filtered.filter(article => article.IsPublished === isPublished);
+      console.log('After status filter:', filtered);
+    }
+    
+    this.filteredArticles = filtered;
+    this.totalItems = this.filteredArticles.length;
+    this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+    this.currentPage = 1; // Reset to first page when filters change
+    
+    console.log('Final filtered articles:', this.filteredArticles);
+  }
+
+  onCategoryFilterChange() {
+    this.applyFilters();
+  }
+
+  onStatusFilterChange() {
+    this.applyFilters();
+  }
+
+  resetFilters() {
+    this.selectedCategory = null;
+    this.selectedStatus = null;
+    this.applyFilters();
+  }
+
   changePage(page: number) {
     if (page < 1 || page > this.totalPages) return;
     this.currentPage = page;
@@ -275,6 +331,13 @@ export class EditorArticleManagerComponent implements OnInit {
 
   openModal(article?: any) {
     if (article) {
+      // Không cần kiểm tra qua email của Author nữa
+      // Kiểm tra nếu người tạo bài viết không phải là người dùng hiện tại và không phải admin
+      if (!this.authService.isAdmin() && article.CreatedByUserId !== this.currentUser.id) {
+        this.toastr.warning('Bạn không có quyền chỉnh sửa bài viết này', 'Không được phép');
+        return;
+      }
+      
       console.log('Opening modal with article:', article);
       this.editData = { 
         Id: article.Id,
@@ -282,7 +345,7 @@ export class EditorArticleManagerComponent implements OnInit {
         Content: article.Content,
         Summary: article.Summary,
         FeaturedImageUrl: article.FeaturedImageUrl,
-        IsFeatured: article.IsFeatured,
+        IsPublished: article.IsPublished,
         CategoryId: article.Category?.Id,
         AuthorId: article.Author?.Id,
         SourceId: article.Source?.Id,
@@ -294,7 +357,7 @@ export class EditorArticleManagerComponent implements OnInit {
         Content: '',
         Summary: '',
         FeaturedImageUrl: '',
-        IsFeatured: false,
+        IsPublished: false,
         CategoryId: null,
         AuthorId: null,
         SourceId: null,
@@ -309,36 +372,107 @@ export class EditorArticleManagerComponent implements OnInit {
     }
   }
 
-  onTagInput() {
-    if (!this.newTag) {
-      this.filteredTags = [];
+  closeModal() {
+    this.showModal = false;
+  }
+
+  // Mở modal xác nhận thay đổi trạng thái bài viết
+  openVisibilityModal(article: any) {
+    // Kiểm tra quyền chuyển trạng thái bài viết
+    if (!this.hasVisibilityPermission) {
+      this.toastr.warning('Bạn không có quyền thay đổi trạng thái bài viết', 'Không được phép');
       return;
     }
     
-    const searchTerm = this.newTag.toLowerCase();
+    // Kiểm tra nếu người tạo bài viết không phải là người dùng hiện tại và không phải admin
+    if (!this.authService.isAdmin() && article.CreatedByUserId !== this.currentUser.id) {
+      this.toastr.warning('Bạn không có quyền thay đổi trạng thái bài viết này', 'Không được phép');
+      return;
+    }
+    
+    this.currentArticle = article;
+    this.showVisibilityModal = true;
+  }
+
+  // Thay đổi trạng thái xuất bản của bài viết
+  toggleArticleVisibility() {
+    if (!this.currentArticle) return;
+    
+    this.saving = true;
+    const articleData = {
+      Title: this.currentArticle.Title,
+      Content: this.currentArticle.Content,
+      Description: this.currentArticle.Summary || '',
+      ImageUrl: this.currentArticle.FeaturedImageUrl || '',
+      IsPublished: !this.currentArticle.IsPublished, // Toggle the publish status
+      IsFeatured: this.currentArticle.IsFeatured || false, // Keep featured status the same
+      CategoryId: this.currentArticle.Category?.Id,
+      AuthorId: parseInt(this.currentUser.id),
+      SourceId: this.currentArticle.Source?.Id || null,
+      Tags: this.currentArticle.ArticleTags?.$values?.map((at: any) => at.Tag?.Name) || []
+    };
+
+    console.log('Toggling visibility with data:', articleData);
+
+    this.articleService.update(this.currentArticle.Id, articleData).subscribe({
+      next: () => {
+        // Update the article's IsPublished status in the local array
+        this.currentArticle.IsPublished = !this.currentArticle.IsPublished;
+        this.saving = false;
+        this.showVisibilityModal = false;
+        const status = this.currentArticle.IsPublished ? 'đã xuất bản' : 'chưa xuất bản';
+        this.toastr.success(`Bài viết đã được đặt thành ${status}`, 'Thành công');
+        // Re-apply filters to update the filtered list
+        this.applyFilters();
+      },
+      error: (err: any) => {
+        console.error('Error updating article visibility', err);
+        this.toastr.error(err.error?.title || 'Không thể cập nhật trạng thái bài viết', 'Lỗi');
+        this.saving = false;
+      }
+    });
+  }
+
+  filterTags() {
+    if (!this.newTag.trim()) {
+      this.filteredTags = [];
+      this.showTagSuggestions = false;
+      return;
+    }
+    
+    const searchTerm = this.newTag.toLowerCase().trim();
     this.filteredTags = this.tags
       .filter(tag => tag.Name.toLowerCase().includes(searchTerm))
-      .filter(tag => !this.editData.tags.includes(tag.Name))
-      .slice(0, 5);
+      .filter(tag => !this.editData.tags.includes(tag.Name));
+    
+    this.showTagSuggestions = this.filteredTags.length > 0;
   }
 
   selectTag(tagName: string) {
     this.newTag = '';
     this.addTag(tagName);
     this.filteredTags = [];
+    this.showTagSuggestions = false;
   }
 
   addTag(tagName?: string) {
-    const tagToAdd = tagName || this.newTag;
+    const tagToAdd = tagName || this.newTag.trim();
     if (tagToAdd && !this.editData.tags.includes(tagToAdd)) {
       this.editData.tags.push(tagToAdd);
       this.newTag = '';
       this.filteredTags = [];
+      this.showTagSuggestions = false;
     }
   }
 
   removeTag(index: number) {
     this.editData.tags.splice(index, 1);
+  }
+
+  hideTagSuggestions() {
+    setTimeout(() => {
+      this.showTagSuggestions = false;
+    }, 200);
   }
 
   validateForm(): boolean {
@@ -361,18 +495,16 @@ export class EditorArticleManagerComponent implements OnInit {
   }
 
   saveArticle(form: NgForm) {
-    if (!form.valid || !this.validateForm()) {
+    if (!this.validateForm()) {
       return;
     }
-    
+
     this.saving = true;
     
     // Ensure tags is always an array
     const tags = this.editData.tags || [];
     
-    // Always set the current user as the author
-    const authorId = this.currentUser.id;
-    
+    // Sử dụng AuthorId từ form thay vì tự động lấy từ API
     if (this.editData.Id) {
       // For update
       const updateData = {
@@ -380,12 +512,15 @@ export class EditorArticleManagerComponent implements OnInit {
         Content: this.editData.Content.trim(),
         Description: this.editData.Summary?.trim() || '',
         ImageUrl: this.editData.FeaturedImageUrl?.trim() || '',
-        IsPublished: this.editData.IsFeatured,
+        IsPublished: this.editData.IsPublished,
+        IsFeatured: false, // Editor không thể đặt bài viết làm nổi bật
         CategoryId: this.editData.CategoryId,
-        AuthorId: authorId,
-        SourceId: this.editData.SourceId,
+        AuthorId: this.editData.AuthorId,
+        SourceId: this.editData.SourceId || null,
         Tags: tags
       };
+      
+      console.log('Sending update data:', updateData);
       
       this.articleService.update(this.editData.Id, updateData).subscribe({
         next: () => {
@@ -396,7 +531,7 @@ export class EditorArticleManagerComponent implements OnInit {
         },
         error: (err: any) => {
           console.error('Error updating article', err);
-          this.toastr.error('Không thể cập nhật bài viết', 'Lỗi');
+          this.toastr.error(err.error?.title || 'Không thể cập nhật bài viết', 'Lỗi');
           this.saving = false;
         }
       });
@@ -407,12 +542,15 @@ export class EditorArticleManagerComponent implements OnInit {
         Content: this.editData.Content.trim(),
         Description: this.editData.Summary?.trim() || '',
         ImageUrl: this.editData.FeaturedImageUrl?.trim() || '',
-        IsPublished: this.editData.IsFeatured,
+        IsPublished: this.editData.IsPublished,
+        IsFeatured: false, // Editor không thể đặt bài viết làm nổi bật
         CategoryId: this.editData.CategoryId,
-        AuthorId: authorId,
-        SourceId: this.editData.SourceId,
+        AuthorId: this.editData.AuthorId,
+        SourceId: this.editData.SourceId || null,
         Tags: tags
       };
+      
+      console.log('Sending create data:', createData);
       
       this.articleService.create(createData).subscribe({
         next: () => {
@@ -423,14 +561,28 @@ export class EditorArticleManagerComponent implements OnInit {
         },
         error: (err: any) => {
           console.error('Error creating article', err);
-          this.toastr.error('Không thể tạo bài viết mới', 'Lỗi');
+          this.toastr.error(err.error?.title || 'Không thể tạo bài viết mới', 'Lỗi');
           this.saving = false;
         }
       });
     }
   }
 
+  // Không cho phép xóa bài viết nếu là editor
   deleteArticle(id: number) {
+    // Lấy bài viết cần xóa
+    const article = this.articles.find(a => a.Id === id);
+    if (!article) {
+      this.toastr.error('Không tìm thấy bài viết', 'Lỗi');
+      return;
+    }
+    
+    // Kiểm tra quyền: Chỉ admin hoặc người tạo bài viết mới có quyền xóa
+    if (!this.authService.isAdmin() && article.CreatedByUserId !== this.currentUser.id) {
+      this.toastr.warning('Bạn không có quyền xóa bài viết này', 'Không được phép');
+      return;
+    }
+    
     if (confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
       this.loading = true;
       this.articleService.delete(id).subscribe({
@@ -460,5 +612,18 @@ export class EditorArticleManagerComponent implements OnInit {
   getSourceName(sourceId: number): string {
     const source = this.sources.find(s => s.Id === sourceId);
     return source ? source.Name : 'Không có';
+  }
+
+  // Kiểm tra xem bài viết có phải của người dùng hiện tại không
+  isCurrentUserArticle(article: any): boolean {
+    return article.CreatedByUserId === this.currentUser.id;
+  }
+  
+  // Kiểm tra xem bài viết có phải của admin không
+  isAdminArticle(article: any): boolean {
+    // Kiểm tra qua CreatedByUserId thay vì Author.Email
+    const adminEmails = ['admin@parknews.com'];
+    return adminEmails.includes(article.Author?.Email) || 
+           (article.CreatedByUserId && article.CreatedByUserId !== this.currentUser.id && !this.isCurrentUserArticle(article));
   }
 } 

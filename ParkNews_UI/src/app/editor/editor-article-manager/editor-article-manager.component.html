@@ -7,9 +7,29 @@
   <div class="toolbar">
     <div class="search-box">
       <input type="text" [(ngModel)]="searchText" placeholder="Tìm kiếm bài viết..." (ngModelChange)="search()" class="form-control">
+      <i class="fas fa-search search-icon"></i>
     </div>
-    <button class="btn btn-primary" routerLink="/editor/new-article">
+    <button class="btn btn-primary" (click)="openModal()">
       <i class="fas fa-plus"></i> Tạo bài viết mới
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Lọc theo danh mục:</label>
+      <select class="form-control" [(ngModel)]="selectedCategory" (change)="onCategoryFilterChange()">
+        <option [ngValue]="null">Tất cả danh mục</option>
+        <option *ngFor="let category of categories" [ngValue]="category.Id">{{ category.Name }}</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Lọc theo trạng thái:</label>
+      <select class="form-control" [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()">
+        <option *ngFor="let option of statusOptions" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </div>
+    <button class="btn btn-outline-secondary" (click)="resetFilters()">
+      <i class="fas fa-sync-alt"></i> Đặt lại bộ lọc
     </button>
   </div>
 
@@ -17,22 +37,22 @@
     <i class="fas fa-spinner fa-spin"></i> Đang tải...
   </div>
 
-  <div *ngIf="!loading && articles.length === 0" class="empty-state">
+  <div *ngIf="!loading && filteredArticles.length === 0" class="empty-state">
     <div class="empty-icon">
       <i class="fas fa-newspaper"></i>
     </div>
-    <h3>Chưa có bài viết nào</h3>
-    <p>Bạn chưa tạo bài viết nào. Hãy bắt đầu bằng cách tạo bài viết mới.</p>
-    <button class="btn btn-primary" routerLink="/editor/new-article">
+    <h3>Không tìm thấy bài viết nào</h3>
+    <p>Không có bài viết nào phù hợp với tiêu chí tìm kiếm hoặc bạn chưa tạo bài viết nào.</p>
+    <button class="btn btn-primary" (click)="openModal()">
       <i class="fas fa-plus"></i> Tạo bài viết mới
     </button>
   </div>
 
-  <div *ngIf="!loading && articles.length > 0" class="articles-grid">
-    <div class="article-card" *ngFor="let article of articles">
+  <div *ngIf="!loading && filteredArticles.length > 0" class="articles-grid">
+    <div class="article-card" *ngFor="let article of filteredArticles | slice: (currentPage-1) * pageSize : currentPage * pageSize">
       <div class="article-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}">
         <span class="article-status" [class.published]="article.IsPublished" [class.draft]="!article.IsPublished">
-          {{article.IsPublished ? 'Đã xuất bản' : 'Bản nháp'}}
+          {{article.IsPublished ? 'Đã xuất bản' : 'Chưa xuất bản'}}
         </span>
       </div>
       <div class="article-content">
@@ -40,10 +60,14 @@
         <p class="article-category" *ngIf="article.Category">{{article.Category.Name}}</p>
         <p class="article-date">{{article.PublishDate | date:'dd/MM/yyyy'}}</p>
         <div class="article-actions">
-          <button class="btn btn-sm btn-outline-primary" [routerLink]="['/editor/articles', article.Id]">
+          <button class="btn btn-sm btn-outline-primary" (click)="openModal(article)" [disabled]="!isCurrentUserArticle(article) && !authService.isAdmin()">
             <i class="fas fa-edit"></i> Sửa
           </button>
-          <button class="btn btn-sm btn-outline-danger" (click)="deleteArticle(article.Id)">
+          <button class="btn btn-sm btn-outline-success" (click)="openVisibilityModal(article)" *ngIf="hasVisibilityPermission" [disabled]="!isCurrentUserArticle(article) && !authService.isAdmin()">
+            <i class="fas" [ngClass]="article.IsPublished ? 'fa-eye-slash' : 'fa-eye'"></i>
+            {{ article.IsPublished ? 'Ẩn' : 'Hiển thị' }}
+          </button>
+          <button class="btn btn-sm btn-outline-danger" (click)="deleteArticle(article.Id)" *ngIf="authService.isAdmin() || isCurrentUserArticle(article)">
             <i class="fas fa-trash"></i> Xóa
           </button>
           <a [routerLink]="['/article', article.Id]" class="btn btn-sm btn-outline-secondary" target="_blank">
@@ -54,7 +78,7 @@
     </div>
   </div>
 
-  <div class="pagination" *ngIf="articles.length > 0">
+  <div class="pagination" *ngIf="filteredArticles.length > 0">
     <button class="btn btn-outline-primary" [disabled]="currentPage === 1" (click)="changePage(currentPage - 1)">
       <i class="fas fa-chevron-left"></i>
     </button>
@@ -62,5 +86,181 @@
     <button class="btn btn-outline-primary" [disabled]="currentPage === totalPages" (click)="changePage(currentPage + 1)">
       <i class="fas fa-chevron-right"></i>
     </button>
+  </div>
+
+  <!-- Modal thêm/sửa bài viết -->
+  <div class="modal" [class.show]="showModal" *ngIf="showModal">
+    <div class="modal-backdrop" (click)="closeModal()"></div>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ editData.Id ? 'Chỉnh sửa bài viết' : 'Tạo bài viết mới' }}</h5>
+          <button type="button" class="close" (click)="closeModal()">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form #form="ngForm">
+            <!-- Basic Information Section -->
+            <div class="form-section">
+              <h6 class="section-title">Thông tin cơ bản</h6>
+              <div class="form-group">
+                <label for="title">Tiêu đề <span class="required">*</span></label>
+                <input type="text" id="title" name="title" [(ngModel)]="editData.Title" required class="form-control" placeholder="Nhập tiêu đề bài viết">
+              </div>
+              <div class="form-row">
+                <div class="form-group col-md-6">
+                  <label for="category">Danh mục <span class="required">*</span></label>
+                  <select id="category" name="category" [(ngModel)]="editData.CategoryId" required class="form-control">
+                    <option [ngValue]="null" disabled>Chọn danh mục</option>
+                    <option *ngFor="let category of categories" [ngValue]="category.Id">{{ category.Name }}</option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="source">Nguồn <span class="required">*</span></label>
+                  <select id="source" name="source" [(ngModel)]="editData.SourceId" required class="form-control">
+                    <option [ngValue]="null" disabled>Chọn nguồn</option>
+                    <option *ngFor="let source of sources" [ngValue]="source.Id">{{ source.Name }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group col-md-12">
+                  <label for="author">Tác giả <span class="required">*</span></label>
+                  <select id="author" name="author" [(ngModel)]="editData.AuthorId" required class="form-control">
+                    <option [ngValue]="null" disabled>Chọn tác giả</option>
+                    <option *ngFor="let author of authors" [ngValue]="author.Id">{{ author.FullName }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="summary">Mô tả ngắn</label>
+                <textarea id="summary" name="summary" [(ngModel)]="editData.Summary" class="form-control" rows="3" placeholder="Nhập mô tả ngắn về bài viết"></textarea>
+              </div>
+            </div>
+            <!-- Content Section -->
+            <div class="form-section">
+              <h6 class="section-title">Nội dung bài viết</h6>
+              <div class="form-group">
+                <label for="content">Nội dung <span class="required">*</span></label>
+                <quill-editor id="content" name="content" [(ngModel)]="editData.Content" [required]="true" [modules]="quillConfig" class="rich-editor"></quill-editor>
+              </div>
+            </div>
+            <!-- Media Section -->
+            <div class="form-section">
+              <h6 class="section-title">Hình ảnh và thẻ</h6>
+              <div class="form-group">
+                <label>URL hình ảnh đại diện</label>
+                <input type="text" id="imageUrl" name="imageUrl" [(ngModel)]="editData.FeaturedImageUrl" class="form-control" placeholder="Nhập URL hình ảnh">
+              </div>
+              <div class="form-group">
+                <label>Xem trước hình ảnh</label>
+                <div class="image-preview-container">
+                  <div *ngIf="editData.FeaturedImageUrl" class="image-preview">
+                    <img [src]="editData.FeaturedImageUrl" alt="Preview">
+                  </div>
+                  <div *ngIf="!editData.FeaturedImageUrl" class="no-image">
+                    <i class="fas fa-image"></i>
+                    <span>Không có hình ảnh</span>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Thẻ</label>
+                <div class="tag-input">
+                  <div class="input-group">
+                    <input 
+                      type="text" 
+                      id="tags" 
+                      name="tags" 
+                      [(ngModel)]="newTag" 
+                      class="form-control" 
+                      placeholder="Nhập thẻ và nhấn Enter" 
+                      (keyup)="filterTags()" 
+                      (keyup.enter)="addTag()" 
+                      (blur)="hideTagSuggestions()"
+                    >
+                    <div class="input-group-append">
+                      <button type="button" class="btn btn-outline-secondary" (click)="addTag()">Thêm</button>
+                    </div>
+                  </div>
+                  <!-- Tag suggestions dropdown -->
+                  <div class="tag-suggestions" *ngIf="showTagSuggestions">
+                    <div 
+                      class="tag-suggestion-item" 
+                      *ngFor="let tag of filteredTags" 
+                      (click)="selectTag(tag.Name)"
+                    >
+                      {{ tag.Name }}
+                    </div>
+                  </div>
+                  <div class="tag-list" *ngIf="editData.tags && editData.tags.length > 0">
+                    <span class="tag" *ngFor="let tag of editData.tags; let i = index">
+                      {{ tag }}
+                      <i class="fas fa-times" (click)="removeTag(i)"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Publishing Options Section -->
+            <div class="form-section">
+              <h6 class="section-title">Tùy chọn xuất bản</h6>
+              <div class="publishing-options">
+                <div class="form-check">
+                  <input type="checkbox" id="isPublished" name="isPublished" [(ngModel)]="editData.IsPublished" class="form-check-input">
+                  <label class="form-check-label" for="isPublished">
+                    <i class="fas fa-upload"></i> Xuất bản bài viết
+                  </label>
+                  <small class="form-text text-muted">Bài viết sẽ hiển thị công khai trên trang web</small>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" (click)="closeModal()">
+                <i class="fas fa-times"></i> Hủy
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="form.invalid || saving"
+                (click)="saveArticle(form)"
+              >
+                <i class="fas" [ngClass]="editData.Id ? 'fa-save' : 'fa-plus-circle'"></i>
+                <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+                {{ editData.Id ? 'Cập nhật' : 'Tạo mới' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal xác nhận thay đổi trạng thái -->
+  <div class="modal" [class.show]="showVisibilityModal" *ngIf="showVisibilityModal">
+    <div class="modal-backdrop" (click)="showVisibilityModal=false"></div>
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Xác nhận thay đổi trạng thái</h5>
+          <button type="button" class="close" (click)="showVisibilityModal=false">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" *ngIf="currentArticle">
+          <p>Bạn có chắc muốn thay đổi trạng thái của bài viết:</p>
+          <p><strong>{{ currentArticle.Title }}</strong></p>
+          <p>Từ <strong>{{ currentArticle.IsPublished ? 'Đã xuất bản' : 'Chưa xuất bản' }}</strong> thành <strong>{{ currentArticle.IsPublished ? 'Chưa xuất bản' : 'Đã xuất bản' }}</strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="showVisibilityModal=false">Hủy</button>
+          <button type="button" class="btn btn-primary" (click)="toggleArticleVisibility()" [disabled]="saving">
+            <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i></span>
+            Xác nhận
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div> 

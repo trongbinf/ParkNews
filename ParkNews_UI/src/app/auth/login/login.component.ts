@@ -18,6 +18,7 @@ export class LoginComponent {
     password: ''
   };
   loading = false;
+  showPassword = false;
 
   constructor(
     private authService: AuthService,
@@ -33,6 +34,10 @@ export class LoginComponent {
         this.router.navigate(['/']);
       }
     }
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
   }
 
   onSubmit() {
@@ -64,10 +69,16 @@ export class LoginComponent {
       error: (error) => {
         this.loading = false;
         console.error('Login error:', error);
-        this.toastr.error(
-          error.error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.',
-          'Lỗi'
-        );
+        
+        // Check if this is an inactive account error
+        if (error.error?.message && error.error.message.includes('Tài khoản của bạn đã bị khóa')) {
+          this.toastr.error(error.error.message, 'Tài khoản bị khóa');
+        } else {
+          this.toastr.error(
+            error.error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.',
+            'Lỗi'
+          );
+        }
       }
     });
   }

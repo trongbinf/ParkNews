@@ -21,6 +21,8 @@ export class RegisterComponent {
     confirmPassword: ''
   };
   loading = false;
+  showPassword = false;
+  showConfirmPassword = false;
 
   constructor(
     private authService: AuthService,
@@ -31,6 +33,14 @@ export class RegisterComponent {
     if (this.authService.isLoggedIn()) {
       this.router.navigate(['/']);
     }
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPasswordVisibility() {
+    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
   onSubmit() {
