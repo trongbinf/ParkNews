@@ -1,0 +1,57 @@
+<button class="search-button" (click)="toggleSearch()">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+</button>
+
+<div class="search-dropdown" *ngIf="isSearchOpen">
+  <div class="search-overlay" (click)="closeSearch()"></div>
+  <div class="search-container">
+    <form (submit)="submitSearch()" class="search-form">
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        name="search" 
+        placeholder="Tìm kiếm bài viết..." 
+        (input)="onSearchChange()"
+        autocomplete="off"
+      >
+      <button type="submit">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+    </form>
+    
+    <div class="search-results" *ngIf="searchTerm.length >= 2">
+      <!-- Loading indicator -->
+      <div class="search-loading" *ngIf="isSearching">
+        <div class="spinner"></div>
+        <p>Đang tìm kiếm...</p>
+      </div>
+      
+      <!-- No results message -->
+      <div class="no-results" *ngIf="noResults && !isSearching">
+        <p>Không tìm thấy kết quả cho "<strong>{{ searchTerm }}</strong>"</p>
+      </div>
+      
+      <!-- Results list -->
+      <div class="results-list" *ngIf="searchResults.length > 0 && !isSearching">
+        <a *ngFor="let article of searchResults" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="result-item" (click)="closeSearch()">
+          <div class="result-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}"></div>
+          <div class="result-content">
+            <h4 class="result-title">{{ article.Title }}</h4>
+            <p class="result-excerpt">{{ getExcerpt(article.Summary) }}</p>
+            <div class="result-category" *ngIf="article.Category">{{ article.Category.Name }}</div>
+          </div>
+        </a>
+        
+        <div class="view-all">
+          <a [routerLink]="['/search']" [queryParams]="{q: searchTerm}" [fragment]="'top'" (click)="closeSearch()">Xem tất cả kết quả</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

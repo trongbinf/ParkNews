@@ -7,16 +7,14 @@ import { HttpClientModule } from '@angular/common/http';
 import { catchError, finalize, of } from 'rxjs';
 
 @Component({
-  selector: 'app-home',
+  selector: 'app-article-list',
   standalone: true,
   imports: [CommonModule, RouterModule, HttpClientModule],
-  templateUrl: './home.component.html',
-  styleUrl: './home.component.css'
+  templateUrl: './article-list.component.html',
+  styleUrl: './article-list.component.css'
 })
-export class HomeComponent implements OnInit {
-  featuredArticles: Article[] = [];
-  latestArticles: Article[] = [];
-  trendingArticles: Article[] = [];
+export class ArticleListComponent implements OnInit {
+  articles: Article[] = [];
   categories: Category[] = [];
   isLoading: boolean = true;
   error: string | null = null;
@@ -27,10 +25,9 @@ export class HomeComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    console.log('Home component initialized');
     this.loadData();
   }
-
+  
   loadData(): void {
     this.isLoading = true;
     this.error = null;
@@ -47,24 +44,9 @@ export class HomeComponent implements OnInit {
       })
     ).subscribe(articles => {
       console.log('Articles loaded:', articles);
-      
-      if (articles.length > 0) {
-        // Featured articles
-        this.featuredArticles = articles.filter(article => article.IsFeatured).slice(0, 5);
-        if (this.featuredArticles.length === 0) {
-          this.featuredArticles = articles.slice(0, 5);
-        }
-        
-        // Latest articles
-        this.latestArticles = [...articles]
-          .sort((a, b) => new Date(b.PublishDate).getTime() - new Date(a.PublishDate).getTime())
-          .slice(0, 8);
-        
-        // Trending articles (for now, just use latest)
-        this.trendingArticles = articles.slice(0, 4);
-      }
+      this.articles = articles;
     });
-    
+
     // Load categories
     this.categoryService.getAll().pipe(
       catchError(error => {
@@ -97,4 +79,4 @@ export class HomeComponent implements OnInit {
       return dateString;
     }
   }
-}
+} 

@@ -1,0 +1,76 @@
+<div id="top" class="search-page">
+  <!-- Loading indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tìm kiếm...</p>
+  </div>
+
+  <!-- Error message -->
+  <div class="error-container" *ngIf="error">
+    <p>{{ error }}</p>
+    <button (click)="searchArticles()" class="btn btn-primary">Thử lại</button>
+  </div>
+
+  <div *ngIf="!isLoading && !error" class="search-container">
+    <!-- Search Header -->
+    <div class="search-header">
+      <div class="container">
+        <h1 class="search-title" *ngIf="searchTerm">Kết quả tìm kiếm cho "{{ searchTerm }}"</h1>
+        <h1 class="search-title" *ngIf="!searchTerm">Tìm kiếm</h1>
+        
+        <!-- Search Form -->
+        <form (submit)="submitSearch()" class="search-form">
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm" 
+            name="search" 
+            placeholder="Tìm kiếm bài viết..." 
+            autocomplete="off"
+          >
+          <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Search Results -->
+    <section class="search-results-section">
+      <div class="container">
+        <div *ngIf="articles.length > 0" class="results-count">
+          <p>Tìm thấy {{ articles.length }} kết quả</p>
+        </div>
+        
+        <div class="articles-grid" *ngIf="articles.length > 0">
+          <a *ngFor="let article of articles" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="article-card">
+            <div class="card-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}">
+              <div class="card-category">{{ article.Category?.Name || 'Tin tức' }}</div>
+            </div>
+            <div class="card-content">
+              <h3 class="card-title">{{ article.Title }}</h3>
+              <p class="card-excerpt">{{ getExcerpt(article.Summary) }}</p>
+              <div class="card-meta">
+                <span class="card-date">{{ getFormattedDate(article.PublishDate) }}</span>
+                <span class="card-author" *ngIf="article.Author">{{ article.Author.FullName }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- No Results -->
+        <div class="empty-container" *ngIf="searchTerm && articles.length === 0">
+          <div class="empty-message">
+            <h3>Không tìm thấy kết quả</h3>
+            <p>Không tìm thấy kết quả nào cho "{{ searchTerm }}". Vui lòng thử lại với từ khóa khác.</p>
+          </div>
+        </div>
+        
+        <!-- No Search Term -->
+        <div class="empty-container" *ngIf="!searchTerm">
+          <div class="empty-message">
+            <h3>Nhập từ khóa để tìm kiếm</h3>
+            <p>Vui lòng nhập từ khóa vào ô tìm kiếm để bắt đầu.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div> 

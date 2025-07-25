@@ -1,38 +1,55 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { TagDTO } from '../admin/tag-manager/tag-manager.component';
+import { map } from 'rxjs/operators';
+import { API_URLS } from './api-urls';
+
+export interface TagResponse {
+  $id: string;
+  $values: Tag[];
+}
+
+export interface Tag {
+  $id: string;
+  Id: number;
+  Name: string;
+  ArticleTags?: {
+    $id: string;
+    $values: any[];
+  } | null;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class TagService {
-  private apiUrl = `${environment.apiUrl}/Tags`;
+  constructor(private http: HttpClient) {}
 
-  constructor(private http: HttpClient) { }
-
-  getAll(): Observable<TagDTO[]> {
-    return this.http.get<TagDTO[]>(`${this.apiUrl}`);
+  getAll(): Observable<Tag[]> {
+    return this.http.get<TagResponse>(`${API_URLS.tag}`).pipe(
+      map(response => response.$values)
+    );
   }
 
-  getById(id: number): Observable<TagDTO> {
-    return this.http.get<TagDTO>(`${this.apiUrl}/${id}`);
+  getById(id: number): Observable<Tag> {
+    return this.http.get<Tag>(`${API_URLS.tag}/${id}`);
   }
 
-  search(query: string): Observable<TagDTO[]> {
-    return this.http.get<TagDTO[]>(`${this.apiUrl}/search?q=${query}`);
+  search(term: string): Observable<Tag[]> {
+    return this.http.get<TagResponse>(`${API_URLS.tag}/search?term=${term}`).pipe(
+      map(response => response.$values)
+    );
   }
 
-  create(tag: TagDTO): Observable<TagDTO> {
-    return this.http.post<TagDTO>(`${this.apiUrl}`, tag);
+  create(tag: Omit<Tag, '$id' | 'Id'>): Observable<Tag> {
+    return this.http.post<Tag>(`${API_URLS.tag}`, tag);
   }
 
-  update(id: number, tag: TagDTO): Observable<TagDTO> {
-    return this.http.put<TagDTO>(`${this.apiUrl}/${id}`, tag);
+  update(id: number, tag: Omit<Tag, '$id' | 'Id'>): Observable<Tag> {
+    return this.http.put<Tag>(`${API_URLS.tag}/${id}`, tag);
   }
 
   delete(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+    return this.http.delete(`${API_URLS.tag}/${id}`);
   }
 }

@@ -1,93 +1,160 @@
-<div class="homepage">
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-content">
-      <h1 class="hero-title">Chào mừng đến với Park News</h1>
-      <p class="hero-subtitle">Nguồn tin tức đáng tin cậy và cập nhật nhất mọi lúc, mọi nơi</p>
-      <div class="hero-buttons">
-        <a routerLink="/auth/login" class="btn btn-primary">Đăng nhập</a>
-        <a routerLink="/auth/register" class="btn btn-secondary">Đăng ký</a>
-      </div>
-    </div>
-    <div class="hero-image">
-      <div class="news-icon">📰</div>
-    </div>
-  </section>
+<div class="news-homepage">
+  <!-- Loading indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tải tin tức...</p>
+  </div>
 
-  <!-- Features Section -->
-  <section class="features">
-    <div class="container">
-      <h2 class="section-title">Tính năng nổi bật</h2>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">📰</div>
-          <h3>Tin tức mới nhất</h3>
-          <p>Cập nhật tin tức 24/7 từ các nguồn đáng tin cậy và uy tín</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔍</div>
-          <h3>Tìm kiếm thông minh</h3>
-          <p>Tìm kiếm và lọc tin tức theo chủ đề, tác giả hoặc từ khóa yêu thích</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📱</div>
-          <h3>Responsive Design</h3>
-          <p>Tương thích hoàn hảo với mọi thiết bị từ mobile đến desktop</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <h3>Tốc độ nhanh</h3>
-          <p>Trải nghiệm mượt mà với tốc độ tải trang nhanh chóng</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔒</div>
-          <h3>Bảo mật cao</h3>
-          <p>Hệ thống bảo mật tiên tiến bảo vệ thông tin người dùng</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">💬</div>
-          <h3>Tương tác cộng đồng</h3>
-          <p>Bình luận và chia sẻ ý kiến với cộng đồng người đọc</p>
+  <!-- Error message -->
+  <div class="error-container" *ngIf="error">
+    <p>{{ error }}</p>
+    <button (click)="loadData()" class="btn btn-primary">Thử lại</button>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-container" *ngIf="!isLoading && !error && featuredArticles.length === 0">
+    <div class="empty-message">
+      <h3>Không có bài viết</h3>
+      <p>Hiện tại chưa có bài viết nào. Vui lòng thử lại sau.</p>
+      <button (click)="loadData()" class="btn btn-primary">Thử lại</button>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && !error && featuredArticles.length > 0" class="news-container">
+    <!-- Categories Section in Header -->
+    <section class="categories-section" *ngIf="categories.length > 0">
+      <div class="container">
+        <div class="categories-list">
+          <a [routerLink]="['/article-list']" [queryParams]="{}" [fragment]="'top'" class="category-tag" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Tất cả</a>
+          <a *ngFor="let category of categories" 
+             [routerLink]="['/category', category.Id]" 
+             [fragment]="'top'"
+             class="category-tag" 
+             routerLinkActive="active">
+            {{ category.Name }}
+          </a>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- About Section -->
-  <section class="about">
-    <div class="container">
-      <div class="about-content">
-        <div class="about-text">
-          <h2>Về Park News</h2>
-          <p>Park News là nền tảng tin tức hiện đại, cung cấp những thông tin mới nhất và đáng tin cậy nhất. Chúng tôi cam kết mang đến trải nghiệm đọc tin tức tốt nhất cho người dùng.</p>
-          <div class="stats">
-            <div class="stat">
-              <span class="stat-number">1000+</span>
-              <span class="stat-label">Bài viết</span>
+    <!-- Latest Articles Section -->
+    <section class="latest-section" *ngIf="latestArticles.length > 0">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Tin mới nhất</h2>
+          <a routerLink="/article-list" [fragment]="'top'" class="view-more">Xem tất cả</a>
+        </div>
+        
+        <div class="latest-grid">
+          <a *ngFor="let article of latestArticles" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="article-card latest-card">
+            <div class="card-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}">
+              <div class="card-category">{{ article.Category?.Name || 'Tin tức' }}</div>
             </div>
-            <div class="stat">
-              <span class="stat-number">50+</span>
-              <span class="stat-label">Tác giả</span>
+            <div class="card-content">
+              <h4 class="card-title">{{ article.Title }}</h4>
+              <p class="card-excerpt">{{ getExcerpt(article.Summary) }}</p>
+              <div class="card-meta">
+                <span class="card-date">{{ getFormattedDate(article.PublishDate) }}</span>
+                <span class="card-author" *ngIf="article.Author">{{ article.Author.FullName }}</span>
+              </div>
             </div>
-            <div class="stat">
-              <span class="stat-number">10K+</span>
-              <span class="stat-label">Độc giả</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Articles Section -->
+    <section class="featured-section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Nổi bật</h2>
+          <a routerLink="/article-list" [fragment]="'top'" class="view-more">Xem thêm</a>
+        </div>
+        
+        <div class="featured-grid">
+          <!-- Main featured article -->
+          <div class="featured-main" *ngIf="featuredArticles[0]">
+            <a [routerLink]="['/article', featuredArticles[0].Id]" [fragment]="'top'" class="article-card main-card">
+              <div class="card-image" [ngStyle]="{'background-image': 'url(' + featuredArticles[0].FeaturedImageUrl + ')'}">
+                <div class="card-category">{{ featuredArticles[0].Category?.Name || 'Tin tức' }}</div>
+              </div>
+              <div class="card-content">
+                <h3 class="card-title">{{ featuredArticles[0].Title }}</h3>
+                <p class="card-excerpt">{{ getExcerpt(featuredArticles[0].Summary, 200) }}</p>
+                <div class="card-meta">
+                  <span class="card-date">{{ getFormattedDate(featuredArticles[0].PublishDate) }}</span>
+                  <span class="card-author" *ngIf="featuredArticles[0].Author">{{ featuredArticles[0].Author.FullName }}</span>
+                </div>
+              </div>
+            </a>
+          </div>
+          
+          <!-- Secondary featured articles -->
+          <div class="featured-secondary">
+            <a *ngFor="let article of featuredArticles.slice(1, 4)" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="article-card secondary-card">
+              <div class="card-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}">
+                <div class="card-category">{{ article.Category?.Name || 'Tin tức' }}</div>
+              </div>
+              <div class="card-content">
+                <h4 class="card-title">{{ article.Title }}</h4>
+                <div class="card-meta">
+                  <span class="card-date">{{ getFormattedDate(article.PublishDate) }}</span>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-column Layout: Trending & Newsletter -->
+    <section class="two-column-section">
+      <div class="container">
+        <div class="columns-container">
+          <!-- Trending Articles Column -->
+          <div class="column trending-column" *ngIf="trendingArticles.length > 0">
+            <div class="column-header">
+              <h3 class="column-title">Xu hướng</h3>
+            </div>
+            
+            <div class="trending-articles">
+              <a *ngFor="let article of trendingArticles; let i = index" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="trending-article">
+                <div class="trending-number">{{ i + 1 }}</div>
+                <div class="trending-content">
+                  <h5 class="trending-title">{{ article.Title }}</h5>
+                  <span class="trending-category">{{ article.Category?.Name || 'Tin tức' }}</span>
+                </div>
+              </a>
+            </div>
+          </div>
+          
+          <!-- Newsletter Column -->
+          <div class="column newsletter-column">
+            <div class="newsletter-box">
+              <h3>Đăng ký nhận bản tin</h3>
+              <p>Nhận tin tức mới nhất và cập nhật quan trọng từ Park News ngay trong hộp thư của bạn</p>
+              <form class="newsletter-form">
+                <input type="email" placeholder="Email của bạn" class="newsletter-input">
+                <button type="submit" class="btn btn-primary newsletter-btn">Đăng ký</button>
+              </form>
+              <div class="newsletter-info">
+                <small>Chúng tôi tôn trọng quyền riêng tư của bạn. Bạn có thể hủy đăng ký bất cứ lúc nào.</small>
+              </div>
+            </div>
+
+            <!-- Editor's Pick Section -->
+            <div class="editors-pick" *ngIf="featuredArticles.length > 0">
+              <h3 class="editors-title">Lựa chọn của biên tập</h3>
+              <div class="editors-article">
+                <a [routerLink]="['/article', featuredArticles[0].Id]" [fragment]="'top'">
+                  <h4>{{ featuredArticles[0].Title }}</h4>
+                  <p>{{ getExcerpt(featuredArticles[0].Summary, 100) }}</p>
+                </a>
+              </div>
             </div>
           </div>
         </div>
-        <div class="about-image">
-          <div class="about-icon">🏢</div>
-        </div>
       </div>
-    </div>
-  </section>
-
-  <!-- CTA Section -->
-  <section class="cta">
-    <div class="container">
-      <h2>Bắt đầu trải nghiệm ngay hôm nay</h2>
-      <p>Tham gia cùng chúng tôi để khám phá thế giới tin tức</p>
-      <a routerLink="/auth/register" class="btn btn-large">Đăng ký miễn phí</a>
-    </div>
-  </section>
+    </section>
+  </div>
 </div>

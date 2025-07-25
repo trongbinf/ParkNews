@@ -58,6 +58,162 @@ namespace ParkNews.Controllers
             return Ok(response);
         }
 
+        // GET: api/Article/featured
+        [HttpGet("featured")]
+        public async Task<ActionResult<IEnumerable<Article>>> GetFeaturedArticles([FromQuery] int count = 5)
+        {
+            var featuredArticles = await _unitOfWork.Articles.GetQueryable()
+                .Include(a => a.Author)
+                .Include(a => a.Category)
+                .Include(a => a.Source)
+                .Include(a => a.ArticleTags)
+                    .ThenInclude(at => at.Tag)
+                .Where(a => a.IsFeatured)
+                .OrderByDescending(a => a.PublishDate)
+                .Take(count)
+                .ToListAsync();
+            
+            // Create a response that includes the navigation properties
+            var response = featuredArticles.Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.Slug,
+                a.Summary,
+                a.Content,
+                a.PublishDate,
+                a.IsFeatured,
+                a.FeaturedImageUrl,
+                Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
+                Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
+                Source = a.Source != null ? new { a.Source.Id, a.Source.Name } : null,
+                ArticleTags = a.ArticleTags.Select(at => new { 
+                    at.ArticleId, 
+                    at.TagId, 
+                    Tag = new { at.Tag.Id, at.Tag.Name }
+                }).ToList()
+            }).ToList();
+            
+            return Ok(response);
+        }
+
+        // GET: api/Article/latest
+        [HttpGet("latest")]
+        public async Task<ActionResult<IEnumerable<Article>>> GetLatestArticles([FromQuery] int count = 8)
+        {
+            var latestArticles = await _unitOfWork.Articles.GetQueryable()
+                .Include(a => a.Author)
+                .Include(a => a.Category)
+                .Include(a => a.Source)
+                .Include(a => a.ArticleTags)
+                    .ThenInclude(at => at.Tag)
+                .OrderByDescending(a => a.PublishDate)
+                .Take(count)
+                .ToListAsync();
+            
+            // Create a response that includes the navigation properties
+            var response = latestArticles.Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.Slug,
+                a.Summary,
+                a.Content,
+                a.PublishDate,
+                a.IsFeatured,
+                a.FeaturedImageUrl,
+                Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
+                Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
+                Source = a.Source != null ? new { a.Source.Id, a.Source.Name } : null,
+                ArticleTags = a.ArticleTags.Select(at => new { 
+                    at.ArticleId, 
+                    at.TagId, 
+                    Tag = new { at.Tag.Id, at.Tag.Name }
+                }).ToList()
+            }).ToList();
+            
+            return Ok(response);
+        }
+
+        // GET: api/Article/trending
+        [HttpGet("trending")]
+        public async Task<ActionResult<IEnumerable<Article>>> GetTrendingArticles([FromQuery] int count = 4)
+        {
+            // You might have a ViewCount or some other metric to determine trending
+            // For now, we'll just use featured articles as a substitute
+            var trendingArticles = await _unitOfWork.Articles.GetQueryable()
+                .Include(a => a.Author)
+                .Include(a => a.Category)
+                .Include(a => a.Source)
+                .Include(a => a.ArticleTags)
+                    .ThenInclude(at => at.Tag)
+                // In a real scenario, you might order by ViewCount or similar metric
+                .OrderByDescending(a => a.PublishDate)
+                .Take(count)
+                .ToListAsync();
+            
+            // Create a response that includes the navigation properties
+            var response = trendingArticles.Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.Slug,
+                a.Summary,
+                a.Content,
+                a.PublishDate,
+                a.IsFeatured,
+                a.FeaturedImageUrl,
+                Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
+                Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
+                Source = a.Source != null ? new { a.Source.Id, a.Source.Name } : null,
+                ArticleTags = a.ArticleTags.Select(at => new { 
+                    at.ArticleId, 
+                    at.TagId, 
+                    Tag = new { at.Tag.Id, at.Tag.Name }
+                }).ToList()
+            }).ToList();
+            
+            return Ok(response);
+        }
+
+        // GET: api/Article/category/{categoryId}
+        [HttpGet("category/{categoryId}")]
+        public async Task<ActionResult<IEnumerable<Article>>> GetArticlesByCategory(int categoryId)
+        {
+            var articles = await _unitOfWork.Articles.GetQueryable()
+                .Include(a => a.Author)
+                .Include(a => a.Category)
+                .Include(a => a.Source)
+                .Include(a => a.ArticleTags)
+                    .ThenInclude(at => at.Tag)
+                .Where(a => a.CategoryId == categoryId)
+                .OrderByDescending(a => a.PublishDate)
+                .ToListAsync();
+            
+            // Create a response that includes the navigation properties
+            var response = articles.Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.Slug,
+                a.Summary,
+                a.Content,
+                a.PublishDate,
+                a.IsFeatured,
+                a.FeaturedImageUrl,
+                Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
+                Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
+                Source = a.Source != null ? new { a.Source.Id, a.Source.Name } : null,
+                ArticleTags = a.ArticleTags.Select(at => new { 
+                    at.ArticleId, 
+                    at.TagId, 
+                    Tag = new { at.Tag.Id, at.Tag.Name }
+                }).ToList()
+            }).ToList();
+            
+            return Ok(response);
+        }
+
         // GET: api/Article/5
         [HttpGet("{id}")]
         [EnableQuery]

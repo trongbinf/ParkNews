@@ -1,0 +1,69 @@
+<div id="top" class="category-page">
+  <!-- Loading indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tải tin tức...</p>
+  </div>
+
+  <!-- Error message -->
+  <div class="error-container" *ngIf="error">
+    <p>{{ error }}</p>
+    <button (click)="loadCategories()" class="btn btn-primary">Thử lại</button>
+  </div>
+
+  <div *ngIf="!isLoading && !error" class="category-container">
+    <!-- Category Navigation -->
+    <div class="category-nav">
+      <div class="container">
+        <div class="categories-list">
+          <a [routerLink]="['/category']" [fragment]="'top'" [class.active]="!currentCategory" class="category-tag">Tất cả</a>
+          <a *ngFor="let category of categories" 
+             [routerLink]="['/category', category.Id]" 
+             [fragment]="'top'"
+             [class.active]="currentCategory?.Id === category.Id" 
+             class="category-tag">
+            {{ category.Name }}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Header -->
+    <div class="category-header">
+      <div class="container">
+        <h1 class="category-title">{{ currentCategory?.Name || 'Tất cả bài viết' }}</h1>
+        <p class="category-description" *ngIf="currentCategory && currentCategory.Description">{{ currentCategory.Description }}</p>
+      </div>
+    </div>
+
+    <!-- Articles Grid -->
+    <section class="articles-section">
+      <div class="container">
+        <div class="articles-grid" *ngIf="articles.length > 0">
+          <a *ngFor="let article of articles" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="article-card">
+            <div class="card-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}">
+              <div class="card-category">{{ article.Category?.Name || 'Tin tức' }}</div>
+            </div>
+            <div class="card-content">
+              <h3 class="card-title">{{ article.Title }}</h3>
+              <p class="card-excerpt">{{ getExcerpt(article.Summary) }}</p>
+              <div class="card-meta">
+                <span class="card-date">{{ getFormattedDate(article.PublishDate) }}</span>
+                <span class="card-author" *ngIf="article.Author">{{ article.Author.FullName }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-container" *ngIf="articles.length === 0">
+          <div class="empty-message">
+            <h3>Không có bài viết</h3>
+            <p *ngIf="currentCategory">Hiện tại chưa có bài viết nào trong danh mục "{{ currentCategory.Name }}".</p>
+            <p *ngIf="!currentCategory">Hiện tại chưa có bài viết nào.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div> 

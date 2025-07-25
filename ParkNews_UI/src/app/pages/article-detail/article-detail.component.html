@@ -1,0 +1,89 @@
+<div id="top" class="article-page">
+  <!-- Loading indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tải bài viết...</p>
+  </div>
+
+  <!-- Error message -->
+  <div class="error-container" *ngIf="error">
+    <p>{{ error }}</p>
+    <button (click)="loadArticle(article ? article.Id : 0)" *ngIf="article" class="btn btn-primary">Thử lại</button>
+    <a routerLink="/" class="btn btn-outline">Quay về trang chủ</a>
+  </div>
+
+  <div *ngIf="!isLoading && !error && article" class="article-container">
+    <!-- Article Header -->
+    <div class="article-header">
+      <div class="container">
+        <div class="article-meta">
+          <a [routerLink]="['/category', article.Category?.Id]" [fragment]="'top'" class="article-category">
+            {{ article.Category?.Name || 'Tin tức' }}
+          </a>
+          <span class="article-date">{{ getFormattedDate(article.PublishDate) }}</span>
+        </div>
+        <h1 class="article-title">{{ article.Title }}</h1>
+        <div class="article-author" *ngIf="article.Author">
+          <span>Tác giả: <strong>{{ article.Author.FullName }}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Featured Image -->
+    <div class="featured-image-container" *ngIf="article.FeaturedImageUrl">
+      <div class="container">
+        <div class="featured-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}"></div>
+      </div>
+    </div>
+
+    <!-- Article Content -->
+    <div class="article-content-container">
+      <div class="container">
+        <div class="article-content">
+          <div class="article-summary" *ngIf="article.Summary">
+            <p>{{ article.Summary }}</p>
+          </div>
+          <div class="article-body" [innerHTML]="article.Content"></div>
+        </div>
+        
+        <!-- Article Tags -->
+        <div class="article-tags" *ngIf="article.ArticleTags && article.ArticleTags.$values && article.ArticleTags.$values.length > 0">
+          <h3>Từ khóa:</h3>
+          <div class="tags-list">
+            <a *ngFor="let articleTag of article.ArticleTags.$values" 
+               [routerLink]="['/tag', articleTag.Tag.Id]"
+               [fragment]="'top'"
+               class="tag-item">
+              # {{ articleTag.Tag.Name }}
+            </a>
+          </div>
+        </div>
+        
+        <!-- Article Source -->
+        <div class="article-source" *ngIf="article.Source">
+          <p>Nguồn: <strong>{{ article.Source.Name }}</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Articles -->
+    <div class="related-articles-container" *ngIf="relatedArticles.length > 0">
+      <div class="container">
+        <h2 class="section-title">Bài viết liên quan</h2>
+        <div class="related-articles-grid">
+          <a *ngFor="let relatedArticle of relatedArticles" [routerLink]="['/article', relatedArticle.Id]" [fragment]="'top'" class="article-card">
+            <div class="card-image" [ngStyle]="{'background-image': 'url(' + relatedArticle.FeaturedImageUrl + ')'}">
+              <div class="card-category">{{ relatedArticle.Category?.Name || 'Tin tức' }}</div>
+            </div>
+            <div class="card-content">
+              <h3 class="card-title">{{ relatedArticle.Title }}</h3>
+              <div class="card-meta">
+                <span class="card-date">{{ getFormattedDate(relatedArticle.PublishDate) }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

@@ -1,35 +1,62 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { CategoryDTO } from '../admin/category-manager/category-manager.component';
+import { Observable, map } from 'rxjs';
+import { API_URLS } from './api-urls';
+
+export interface CategoryResponse {
+  $id: string;
+  $values: Category[];
+}
+
+export interface Category {
+  $id: string;
+  Id: number;
+  Name: string;
+  Slug: string;
+  Description: string;
+  ParentCategoryId: number | null;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class CategoryService {
-  private apiUrl = `${environment.apiUrl}/Category`;
+  private apiUrl = API_URLS.category;
 
   constructor(private http: HttpClient) { }
 
-  getAll(): Observable<CategoryDTO[]> {
-    return this.http.get<CategoryDTO[]>(`${this.apiUrl}`);
+  getAll(): Observable<Category[]> {
+    return this.http.get<CategoryResponse>(this.apiUrl).pipe(
+      map(response => {
+        if (response && response.$values && Array.isArray(response.$values)) {
+          return response.$values;
+        }
+        return [];
+      })
+    );
   }
 
-  getById(id: number): Observable<CategoryDTO> {
-    return this.http.get<CategoryDTO>(`${this.apiUrl}/${id}`);
+  getById(id: number): Observable<Category> {
+    return this.http.get<Category>(`${this.apiUrl}/${id}`);
   }
 
-  search(query: string): Observable<CategoryDTO[]> {
-    return this.http.get<CategoryDTO[]>(`${this.apiUrl}/search?q=${query}`);
+  search(query: string): Observable<Category[]> {
+    return this.http.get<CategoryResponse>(`${this.apiUrl}/search?q=${query}`).pipe(
+      map(response => {
+        if (response && response.$values && Array.isArray(response.$values)) {
+          return response.$values;
+        }
+        return [];
+      })
+    );
   }
 
-  create(category: CategoryDTO): Observable<CategoryDTO> {
-    return this.http.post<CategoryDTO>(`${this.apiUrl}`, category);
+  create(category: Omit<Category, '$id' | 'Id'>): Observable<Category> {
+    return this.http.post<Category>(`${this.apiUrl}`, category);
   }
 
-  update(id: number, category: CategoryDTO): Observable<CategoryDTO> {
-    return this.http.put<CategoryDTO>(`${this.apiUrl}/${id}`, category);
+  update(id: number, category: Omit<Category, '$id' | 'Id'>): Observable<Category> {
+    return this.http.put<Category>(`${this.apiUrl}/${id}`, category);
   }
 
   delete(id: number): Observable<any> {

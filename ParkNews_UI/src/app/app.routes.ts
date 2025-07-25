@@ -7,6 +7,30 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/home/home.component').then(c => c.HomeComponent)
   },
   {
+    path: 'article-list',
+    loadComponent: () => import('./pages/article-list/article-list.component').then(c => c.ArticleListComponent)
+  },
+  {
+    path: 'search',
+    loadComponent: () => import('./pages/search/search.component').then(c => c.SearchComponent)
+  },
+  {
+    path: 'tag/:id',
+    loadComponent: () => import('./pages/tag/tag.component').then(c => c.TagComponent)
+  },
+  {
+    path: 'category',
+    loadComponent: () => import('./pages/category/category.component').then(c => c.CategoryComponent)
+  },
+  {
+    path: 'category/:id',
+    loadComponent: () => import('./pages/category/category.component').then(c => c.CategoryComponent)
+  },
+  {
+    path: 'article/:id',
+    loadComponent: () => import('./pages/article-detail/article-detail.component').then(c => c.ArticleDetailComponent)
+  },
+  {
     path: 'profile',
     loadComponent: () => import('./pages/profile/profile.component').then(c => c.ProfileComponent)
   },

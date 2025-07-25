@@ -1,0 +1,67 @@
+<div id="top" class="article-list-page">
+  <!-- Loading indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tải tin tức...</p>
+  </div>
+
+  <!-- Error message -->
+  <div class="error-container" *ngIf="error">
+    <p>{{ error }}</p>
+    <button (click)="loadData()" class="btn btn-primary">Thử lại</button>
+  </div>
+
+  <div *ngIf="!isLoading && !error" class="article-list-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="container">
+        <h1 class="page-title">Tất cả bài viết</h1>
+        <p class="page-description">Khám phá tất cả các bài viết mới nhất từ Park News</p>
+      </div>
+    </div>
+
+    <!-- Categories Section -->
+    <section class="categories-section" *ngIf="categories.length > 0">
+      <div class="container">
+        <div class="categories-list">
+          <a [routerLink]="['/article-list']" [queryParams]="{}" class="category-tag active">Tất cả</a>
+          <a *ngFor="let category of categories" 
+             [routerLink]="['/category', category.Id]" 
+             [fragment]="'top'"
+             class="category-tag">
+            {{ category.Name }}
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Articles Grid -->
+    <section class="articles-section">
+      <div class="container">
+        <div class="articles-grid" *ngIf="articles.length > 0">
+          <a *ngFor="let article of articles" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="article-card">
+            <div class="card-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}">
+              <div class="card-category">{{ article.Category?.Name || 'Tin tức' }}</div>
+            </div>
+            <div class="card-content">
+              <h3 class="card-title">{{ article.Title }}</h3>
+              <p class="card-excerpt">{{ getExcerpt(article.Summary) }}</p>
+              <div class="card-meta">
+                <span class="card-date">{{ getFormattedDate(article.PublishDate) }}</span>
+                <span class="card-author" *ngIf="article.Author">{{ article.Author.FullName }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-container" *ngIf="articles.length === 0">
+          <div class="empty-message">
+            <h3>Không có bài viết</h3>
+            <p>Hiện tại chưa có bài viết nào. Vui lòng thử lại sau.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div> 

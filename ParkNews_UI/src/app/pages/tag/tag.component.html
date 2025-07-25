@@ -1,0 +1,67 @@
+<div id="top" class="tag-page">
+  <!-- Loading indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tải tin tức...</p>
+  </div>
+
+  <!-- Error message -->
+  <div class="error-container" *ngIf="error">
+    <p>{{ error }}</p>
+    <a routerLink="/" class="btn btn-outline">Quay về trang chủ</a>
+  </div>
+
+  <div *ngIf="!isLoading && !error && currentTag" class="tag-container">
+    <!-- Tag Header -->
+    <div class="tag-header">
+      <div class="container">
+        <div class="tag-badge"># {{ currentTag.Name }}</div>
+        <h1 class="tag-title">Bài viết với thẻ: {{ currentTag.Name }}</h1>
+      </div>
+    </div>
+
+    <!-- Related Tags -->
+    <div class="related-tags-section" *ngIf="relatedTags.length > 0">
+      <div class="container">
+        <div class="related-tags-list">
+          <span class="related-tags-label">Thẻ liên quan:</span>
+          <a *ngFor="let tag of relatedTags" 
+             [routerLink]="['/tag', tag.Id]" 
+             [fragment]="'top'"
+             class="tag-item">
+            # {{ tag.Name }}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Articles Grid -->
+    <section class="articles-section">
+      <div class="container">
+        <div class="articles-grid" *ngIf="articles.length > 0">
+          <a *ngFor="let article of articles" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="article-card">
+            <div class="card-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}">
+              <div class="card-category">{{ article.Category?.Name || 'Tin tức' }}</div>
+            </div>
+            <div class="card-content">
+              <h3 class="card-title">{{ article.Title }}</h3>
+              <p class="card-excerpt">{{ getExcerpt(article.Summary) }}</p>
+              <div class="card-meta">
+                <span class="card-date">{{ getFormattedDate(article.PublishDate) }}</span>
+                <span class="card-author" *ngIf="article.Author">{{ article.Author.FullName }}</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-container" *ngIf="articles.length === 0">
+          <div class="empty-message">
+            <h3>Không có bài viết</h3>
+            <p>Hiện tại chưa có bài viết nào với thẻ "{{ currentTag.Name }}".</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div> 

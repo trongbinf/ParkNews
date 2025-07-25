@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <header class="park-header">
       <div class="container">
@@ -20,30 +21,71 @@ import { AuthService } from '../../services/auth.service';
           <nav class="main-nav">
             <ul class="nav-list">
               <li class="nav-item"><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Trang chủ</a></li>
-              <li class="nav-item"><a routerLink="/danh-muc" routerLinkActive="active">Danh mục</a></li>
-              <li class="nav-item"><a routerLink="/the" routerLinkActive="active">Thẻ</a></li>
-              <li class="nav-item"><a routerLink="/gioi-thieu" routerLinkActive="active">Giới thiệu</a></li>
-              <li class="nav-item"><a routerLink="/lien-he" routerLinkActive="active">Liên hệ</a></li>
+              <li class="nav-item"><a routerLink="/category" routerLinkActive="active">Danh mục</a></li>
+              <li class="nav-item"><a routerLink="/article-list" routerLinkActive="active">Bài viết</a></li>
               <li class="nav-item" *ngIf="isAdmin"><a routerLink="/admin/dashboard" routerLinkActive="active">Dashboard</a></li>
             </ul>
           </nav>
           
-          <div class="auth-buttons" *ngIf="!isLoggedIn">
-            <a routerLink="/auth/login" class="btn btn-login">Đăng nhập</a>
-            <a routerLink="/auth/register" class="btn btn-register">Đăng ký</a>
-          </div>
+          <div class="header-actions">
+            <div class="search-button-wrapper">
+              <button class="search-btn" (click)="toggleSearch()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+            </div>
+            
+            <div class="auth-buttons" *ngIf="!isLoggedIn">
+              <a routerLink="/auth/login" class="btn btn-login">Đăng nhập</a>
+              <a routerLink="/auth/register" class="btn btn-register">Đăng ký</a>
+            </div>
 
-          <div class="user-menu" *ngIf="isLoggedIn">
-            <div class="user-info">
-              <span class="user-name">{{ getUserDisplayName() }}</span>
-              <div class="user-dropdown">
-                <ul class="dropdown-menu">
-                  <li *ngIf="isAdmin"><a routerLink="/admin/dashboard">Dashboard</a></li>
-                  <li><a routerLink="/profile">Hồ sơ</a></li>
-                  <li><a href="javascript:void(0)" (click)="logout()">Đăng xuất</a></li>
-                </ul>
+            <div class="user-menu" *ngIf="isLoggedIn">
+              <div class="user-info">
+                <span class="user-name">{{ getUserDisplayName() }}</span>
+                <div class="user-dropdown">
+                  <ul class="dropdown-menu">
+                    <li *ngIf="isAdmin"><a routerLink="/admin/dashboard">Dashboard</a></li>
+                    <li><a routerLink="/profile">Hồ sơ</a></li>
+                    <li><a href="javascript:void(0)" (click)="logout()">Đăng xuất</a></li>
+                  </ul>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Search Overlay -->
+      <div class="search-overlay" *ngIf="isSearchOpen" (click)="closeSearch()"></div>
+      
+      <!-- Search Modal -->
+      <div class="search-modal" *ngIf="isSearchOpen">
+        <div class="search-modal-content">
+          <div class="search-modal-header">
+            <h3>Tìm kiếm</h3>
+            <button class="close-btn" (click)="closeSearch()">×</button>
+          </div>
+          <div class="search-modal-body">
+            <form (submit)="submitSearch()" class="search-form">
+              <input 
+                type="text" 
+                [(ngModel)]="searchTerm" 
+                name="search" 
+                placeholder="Nhập từ khóa tìm kiếm..." 
+                autocomplete="off"
+                autofocus
+              >
+              <button type="submit" class="search-submit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                Tìm kiếm
+              </button>
+            </form>
           </div>
         </div>
       </div>
@@ -111,7 +153,7 @@ import { AuthService } from '../../services/auth.service';
     
     .nav-item a:hover,
     .nav-item a.active {
-      color: #4CAF50;
+      color: #2ecc71;
     }
     
     .nav-item a::after {
@@ -121,13 +163,42 @@ import { AuthService } from '../../services/auth.service';
       right: 100%;
       bottom: 0;
       height: 2px;
-      background-color: #4CAF50;
+      background-color: #2ecc71;
       transition: right 0.3s ease;
     }
     
     .nav-item a:hover::after,
     .nav-item a.active::after {
       right: 0;
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .search-button-wrapper {
+      margin-right: 5px;
+    }
+    
+    .search-btn {
+      background-color: #2ecc71;
+      color: #fff;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .search-btn:hover {
+      background-color: #27ae60;
+      transform: scale(1.05);
     }
     
     .auth-buttons {
@@ -151,19 +222,19 @@ import { AuthService } from '../../services/auth.service';
     }
     
     .btn-login:hover {
-      border-color: #4CAF50;
-      color: #4CAF50;
+      border-color: #2ecc71;
+      color: #2ecc71;
     }
     
     .btn-register {
       color: #fff;
-      background-color: #4CAF50;
-      border: 1px solid #4CAF50;
+      background-color: #2ecc71;
+      border: 1px solid #2ecc71;
     }
     
     .btn-register:hover {
-      background-color: #45a049;
-      box-shadow: 0 2px 5px rgba(76, 175, 80, 0.3);
+      background-color: #27ae60;
+      box-shadow: 0 2px 5px rgba(46, 204, 113, 0.3);
     }
     
     /* User Menu Styles */
@@ -177,12 +248,12 @@ import { AuthService } from '../../services/auth.service';
       cursor: pointer;
       padding: 8px 16px;
       border-radius: 4px;
-      border: 1px solid #4CAF50;
+      border: 1px solid #2ecc71;
       transition: all 0.3s ease;
     }
     
     .user-info:hover {
-      background-color: rgba(76, 175, 80, 0.1);
+      background-color: rgba(46, 204, 113, 0.1);
     }
     
     .user-name {
@@ -233,7 +304,97 @@ import { AuthService } from '../../services/auth.service';
     
     .dropdown-menu a:hover {
       background-color: #444;
-      color: #4CAF50;
+      color: #2ecc71;
+    }
+    
+    /* Search Modal */
+    .search-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1001;
+    }
+    
+    .search-modal {
+      position: fixed;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      max-width: 90%;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+      z-index: 1002;
+    }
+    
+    .search-modal-content {
+      padding: 20px;
+    }
+    
+    .search-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .search-modal-header h3 {
+      margin: 0;
+      color: #333;
+      font-size: 20px;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #95a5a6;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    
+    .close-btn:hover {
+      color: #e74c3c;
+    }
+    
+    .search-form {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .search-form input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 2px solid #ecf0f1;
+      border-radius: 4px;
+      font-size: 16px;
+      outline: none;
+    }
+    
+    .search-form input:focus {
+      border-color: #2ecc71;
+    }
+    
+    .search-submit {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #2ecc71;
+      color: #fff;
+      border: none;
+      padding: 0 20px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .search-submit:hover {
+      background-color: #27ae60;
     }
     
     @media (max-width: 992px) {
@@ -256,6 +417,11 @@ import { AuthService } from '../../services/auth.service';
         justify-content: center;
       }
       
+      .header-actions {
+        flex-direction: column;
+        align-items: center;
+      }
+      
       .auth-buttons, .user-menu {
         margin-top: 10px;
       }
@@ -275,6 +441,10 @@ import { AuthService } from '../../services/auth.service';
         flex-wrap: wrap;
         justify-content: center;
       }
+      
+      .search-modal {
+        width: 95%;
+      }
     }
   `]
 })
@@ -282,6 +452,8 @@ export class HeaderComponent implements OnInit {
   isLoggedIn = false;
   isAdmin = false;
   currentUser: any = null;
+  isSearchOpen = false;
+  searchTerm = '';
   
   constructor(private authService: AuthService) {}
   
@@ -309,6 +481,21 @@ export class HeaderComponent implements OnInit {
       return this.currentUser.email;
     } else {
       return 'User';
+    }
+  }
+  
+  toggleSearch(): void {
+    this.isSearchOpen = !this.isSearchOpen;
+  }
+  
+  closeSearch(): void {
+    this.isSearchOpen = false;
+  }
+  
+  submitSearch(): void {
+    if (this.searchTerm.trim()) {
+      window.location.href = `/search?q=${encodeURIComponent(this.searchTerm)}`;
+      this.closeSearch();
     }
   }
   
