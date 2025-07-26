@@ -8,7 +8,7 @@
   <!-- Error message -->
   <div class="error-container" *ngIf="error">
     <p>{{ error }}</p>
-    <button (click)="loadArticle(article ? article.Id : 0)" *ngIf="article" class="btn btn-primary">Thử lại</button>
+    <button (click)="loadArticleById(article ? article.Id : 0)" *ngIf="article" class="btn btn-primary">Thử lại</button>
     <a routerLink="/" class="btn btn-outline">Quay về trang chủ</a>
   </div>
 
@@ -71,7 +71,7 @@
       <div class="container">
         <h2 class="section-title">Bài viết liên quan</h2>
         <div class="related-articles-grid">
-          <a *ngFor="let relatedArticle of relatedArticles" [routerLink]="['/article', relatedArticle.Id]" [fragment]="'top'" class="article-card">
+          <a *ngFor="let relatedArticle of relatedArticles" [routerLink]="['/article/slug', relatedArticle.Slug]" [fragment]="'top'" class="article-card">
             <div class="card-image" [ngStyle]="{'background-image': 'url(' + relatedArticle.FeaturedImageUrl + ')'}">
               <div class="card-category">{{ relatedArticle.Category?.Name || 'Tin tức' }}</div>
             </div>

@@ -67,12 +67,14 @@
             <i class="fas" [ngClass]="article.IsPublished ? 'fa-eye-slash' : 'fa-eye'"></i>
             {{ article.IsPublished ? 'Ẩn' : 'Hiển thị' }}
           </button>
+          <!-- Sửa nút xóa bài viết -->
           <button class="btn btn-sm btn-outline-danger" (click)="deleteArticle(article.Id)" *ngIf="authService.isAdmin() || isCurrentUserArticle(article)">
             <i class="fas fa-trash"></i> Xóa
           </button>
-          <a [routerLink]="['/article', article.Id]" class="btn btn-sm btn-outline-secondary" target="_blank">
+          <!-- Cập nhật nút xem bài viết để sử dụng đúng route với slug -->
+          <button class="btn btn-sm btn-outline-info me-1" [routerLink]="['/article/slug', article.Slug]" title="Xem bài viết">
             <i class="fas fa-eye"></i> Xem
-          </a>
+          </button>
         </div>
       </div>
     </div>

@@ -5,4 +5,5 @@ export * from './zoo-form/zoo-form.component';
 export * from './zoo-table/zoo-table.component';
 export * from './zoo-table-column/zoo-table-column.component';
 export * from './zoo-card/zoo-card.component';
-export * from './zoo-icon/zoo-icon.component'; 
+export * from './zoo-icon/zoo-icon.component';
+export * from './zoo-toast/zoo-toast.component'; 

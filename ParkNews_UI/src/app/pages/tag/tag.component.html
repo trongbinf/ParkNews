@@ -39,7 +39,8 @@
     <section class="articles-section">
       <div class="container">
         <div class="articles-grid" *ngIf="articles.length > 0">
-          <a *ngFor="let article of articles" [routerLink]="['/article', article.Id]" [fragment]="'top'" class="article-card">
+          <!-- Cập nhật liên kết bài viết để sử dụng slug thay vì id -->
+          <a *ngFor="let article of articles" [routerLink]="['/article/slug', article.Slug]" [fragment]="'top'" class="article-card">
             <div class="card-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}">
               <div class="card-category">{{ article.Category?.Name || 'Tin tức' }}</div>
             </div>

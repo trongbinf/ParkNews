@@ -1,21 +1,21 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { provideHttpClient, withInterceptors, HttpRequest, HttpHandlerFn } from '@angular/common/http';
-import { provideToastr } from 'ngx-toastr';
+import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient, withInterceptors, HttpInterceptorFn } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { QuillModule } from 'ngx-quill';
 
 import { routes } from './app.routes';
 import { AuthService } from './services/auth.service';
-import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { inject } from '@angular/core';
 import { catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
-import { importProvidersFrom } from '@angular/core';
+
+import { provideToastr } from 'ngx-toastr';
+import { QuillModule } from 'ngx-quill';
 
 // Interceptor function
-function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn) {
+export const authInterceptorFn: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const toastr = inject(ToastrService);
@@ -52,22 +52,20 @@ function authInterceptor(req: HttpRequest<unknown>, next: HttpHandlerFn) {
       return throwError(() => error);
     })
   );
-}
+};
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }), 
-    provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(
-      withInterceptors([authInterceptor])
-    ),
-    provideAnimations(),
+    provideRouter(routes),
+    provideHttpClient(withInterceptors([authInterceptorFn])),
+    provideAnimations(), // Cần thiết cho animations
     provideToastr({
       timeOut: 3000,
       positionClass: 'toast-top-right',
       preventDuplicates: true,
-      closeButton: true
     }),
-    importProvidersFrom(QuillModule.forRoot())
+    importProvidersFrom(
+      QuillModule.forRoot()
+    )
   ]
 };

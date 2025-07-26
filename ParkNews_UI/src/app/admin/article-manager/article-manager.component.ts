@@ -9,6 +9,8 @@ import { ToastrService } from 'ngx-toastr';
 import { QuillModule } from 'ngx-quill';
 import { TagService } from '../../services/tag.service';
 import { SourceService } from '../../services/source.service';
+import { AuthService } from '../../services/auth.service';
+import { ZooToastService } from '../../shared/components/zoo-toast/zoo-toast.component';
 
 interface Author {
   Id: number;
@@ -96,7 +98,7 @@ export class ArticleManagerComponent implements OnInit {
   pageSize = 10;
   totalItems = 0;
   totalPages = 1;
-
+  
   // Quill editor configuration
   quillConfig = {
     toolbar: [
@@ -123,7 +125,8 @@ export class ArticleManagerComponent implements OnInit {
     private authorService: AuthorService,
     private tagService: TagService,
     private sourceService: SourceService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private zooToast: ZooToastService
   ) {}
 
   ngOnInit() {
@@ -416,27 +419,41 @@ export class ArticleManagerComponent implements OnInit {
   }
 
   deleteArticle(id: number) {
-    if (confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-      this.loading = true;
-      this.articleService.delete(id).subscribe({
-        next: () => {
-          this.loadArticles();
-          this.toastr.success('Bài viết đã được xóa thành công', 'Thành công');
-        },
-        error: (err) => {
-          console.error('Error deleting article', err);
-          this.toastr.error('Không thể xóa bài viết', 'Lỗi');
-          this.loading = false;
-        }
-      });
+    // Lấy bài viết cần xóa
+    const article = this.articles.find(a => a.Id === id);
+    if (!article) {
+      this.zooToast.error('Không tìm thấy bài viết');
+      return;
     }
+    
+    // Sử dụng hộp thoại xác nhận tùy chỉnh thay vì confirm mặc định
+    this.zooToast.confirm({
+      title: 'Xác nhận xóa bài viết',
+      message: `Bạn có chắc chắn muốn xóa bài viết "<strong>${article.Title}</strong>"?<br><br>Hành động này không thể hoàn tác và bài viết sẽ bị xóa vĩnh viễn.`,
+      confirmText: 'Xóa',
+      cancelText: 'Hủy',
+      onConfirm: () => {
+        this.loading = true;
+        this.articleService.delete(id).subscribe({
+          next: () => {
+            this.loadArticles();
+            this.zooToast.success('Bài viết đã được xóa thành công');
+          },
+          error: (err: any) => {
+            console.error('Error deleting article', err);
+            this.zooToast.error('Không thể xóa bài viết');
+            this.loading = false;
+          }
+        });
+      }
+    });
   }
 
   // Methods for adding/editing articles
   openModal(article?: any) {
     if (article) {
       // Edit existing article
-      this.editData = {
+      this.editData = { 
         Id: article.Id,
         Title: article.Title,
         Content: article.Content,
@@ -451,7 +468,7 @@ export class ArticleManagerComponent implements OnInit {
       };
     } else {
       // Create new article
-      this.editData = {
+      this.editData = { 
         Title: '',
         Content: '',
         Description: '',
@@ -522,9 +539,9 @@ export class ArticleManagerComponent implements OnInit {
       this.toastr.error('Vui lòng điền đầy đủ thông tin bắt buộc', 'Lỗi');
       return;
     }
-
-    this.saving = true;
     
+    this.saving = true;
+
     if (this.editData.Id) {
       // Update existing article
       this.articleService.update(this.editData.Id, this.editData).subscribe({

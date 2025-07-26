@@ -447,6 +447,53 @@ namespace ParkNews.Controllers
             return Ok(response);
         }
 
+        // GET: api/Article/bytag/{tagId}
+        [HttpGet("bytag/{tagId}")]
+        [EnableQuery]
+        public async Task<ActionResult<IEnumerable<Article>>> GetArticlesByTag(int tagId)
+        {
+            var tag = await _unitOfWork.Tags.GetByIdAsync(tagId);
+            if (tag == null)
+            {
+                return NotFound("Không tìm thấy thẻ");
+            }
+
+            var articles = await _unitOfWork.ArticleTags.GetQueryable()
+                .Where(at => at.TagId == tagId)
+                .Select(at => at.Article)
+                .Include(a => a.Author)
+                .Include(a => a.Category)
+                .Include(a => a.Source)
+                .Include(a => a.ArticleTags)
+                    .ThenInclude(at => at.Tag)
+                .ToListAsync();
+            
+            // Create a response that includes the navigation properties
+            var response = articles.Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.Slug,
+                a.Summary,
+                a.Content,
+                a.PublishDate,
+                a.IsFeatured,
+                a.IsPublished,
+                a.FeaturedImageUrl,
+                a.CreatedByUserId,
+                Category = a.Category != null ? new { a.Category.Id, a.Category.Name } : null,
+                Author = a.Author != null ? new { a.Author.Id, a.Author.FullName, a.Author.Email } : null,
+                Source = a.Source != null ? new { a.Source.Id, a.Source.Name } : null,
+                ArticleTags = a.ArticleTags.Select(at => new { 
+                    at.ArticleId, 
+                    at.TagId, 
+                    Tag = new { at.Tag.Id, at.Tag.Name, at.Tag.Slug }
+                }).ToList()
+            }).ToList();
+            
+            return Ok(response);
+        }
+
         // POST: api/Article
         [HttpPost]
         [Authorize(Roles = "Admin,Editor")]

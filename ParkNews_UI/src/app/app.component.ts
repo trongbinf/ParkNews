@@ -4,11 +4,12 @@ import { Router, NavigationEnd, RouterOutlet, RouterModule } from '@angular/rout
 import { filter } from 'rxjs/operators';
 import { HeaderComponent } from './shared/header/header.component';
 import { FooterComponent } from './shared/footer/footer.component';
+import { ZooToastComponent } from './shared/components';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterModule, HeaderComponent, FooterComponent],
+  imports: [CommonModule, RouterOutlet, RouterModule, HeaderComponent, FooterComponent, ZooToastComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })

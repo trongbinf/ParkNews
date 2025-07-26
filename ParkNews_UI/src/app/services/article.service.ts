@@ -1,7 +1,7 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, catchError, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { API_URLS } from './api-urls';
 
@@ -158,7 +158,19 @@ export class ArticleService {
 
   getByTag(tagId: number): Observable<Article[]> {
     return this.http.get<ArticleResponse>(`${API_URLS.article}/bytag/${tagId}`).pipe(
-      map(response => response.$values)
+      map(response => {
+        console.log('Tag API response:', response);
+        if (response && response.$values && Array.isArray(response.$values)) {
+          return response.$values.filter(article => article.IsPublished);
+        } else if (Array.isArray(response)) {
+          return response.filter(article => article.IsPublished);
+        }
+        return [];
+      }),
+      catchError(error => {
+        console.error('Error getting articles by tag:', error);
+        return of([]);
+      })
     );
   }
 

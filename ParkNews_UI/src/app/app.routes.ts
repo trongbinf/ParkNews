@@ -17,6 +17,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/search/search.component').then(c => c.SearchComponent)
   },
   {
+    path: 'tag/slug/:slug',
+    loadComponent: () => import('./pages/tag/tag.component').then(c => c.TagComponent)
+  },
+  {
     path: 'tag/:id',
     loadComponent: () => import('./pages/tag/tag.component').then(c => c.TagComponent)
   },
@@ -27,6 +31,10 @@ export const routes: Routes = [
   {
     path: 'category/:id',
     loadComponent: () => import('./pages/category/category.component').then(c => c.CategoryComponent)
+  },
+  {
+    path: 'article/slug/:slug',
+    loadComponent: () => import('./pages/article-detail/article-detail.component').then(c => c.ArticleDetailComponent)
   },
   {
     path: 'article/:id',

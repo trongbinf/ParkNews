@@ -10,6 +10,7 @@ import { TagService } from '../../services/tag.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { QuillModule } from 'ngx-quill';
+import { ZooToastService } from '../../shared/components/zoo-toast/zoo-toast.component';
 
 @Component({
   selector: 'app-editor-article-manager',
@@ -89,7 +90,8 @@ export class EditorArticleManagerComponent implements OnInit {
     private sourceService: SourceService,
     private tagService: TagService,
     public authService: AuthService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private zooToast: ZooToastService
   ) {}
 
   ngOnInit() {
@@ -140,7 +142,7 @@ export class EditorArticleManagerComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading articles', err);
-        this.toastr.error('Không thể tải danh sách bài viết', 'Lỗi');
+        this.zooToast.error('Không thể tải danh sách bài viết');
         this.loading = false;
       }
     });
@@ -334,7 +336,7 @@ export class EditorArticleManagerComponent implements OnInit {
       // Không cần kiểm tra qua email của Author nữa
       // Kiểm tra nếu người tạo bài viết không phải là người dùng hiện tại và không phải admin
       if (!this.authService.isAdmin() && article.CreatedByUserId !== this.currentUser.id) {
-        this.toastr.warning('Bạn không có quyền chỉnh sửa bài viết này', 'Không được phép');
+        this.zooToast.warning('Bạn không có quyền chỉnh sửa bài viết này', 'Không được phép');
         return;
       }
       
@@ -380,13 +382,13 @@ export class EditorArticleManagerComponent implements OnInit {
   openVisibilityModal(article: any) {
     // Kiểm tra quyền chuyển trạng thái bài viết
     if (!this.hasVisibilityPermission) {
-      this.toastr.warning('Bạn không có quyền thay đổi trạng thái bài viết', 'Không được phép');
+      this.zooToast.warning('Bạn không có quyền thay đổi trạng thái bài viết', 'Không được phép');
       return;
     }
     
     // Kiểm tra nếu người tạo bài viết không phải là người dùng hiện tại và không phải admin
     if (!this.authService.isAdmin() && article.CreatedByUserId !== this.currentUser.id) {
-      this.toastr.warning('Bạn không có quyền thay đổi trạng thái bài viết này', 'Không được phép');
+      this.zooToast.warning('Bạn không có quyền thay đổi trạng thái bài viết này', 'Không được phép');
       return;
     }
     
@@ -407,7 +409,7 @@ export class EditorArticleManagerComponent implements OnInit {
       IsPublished: !this.currentArticle.IsPublished, // Toggle the publish status
       IsFeatured: this.currentArticle.IsFeatured || false, // Keep featured status the same
       CategoryId: this.currentArticle.Category?.Id,
-      AuthorId: parseInt(this.currentUser.id),
+      AuthorId: this.currentArticle.Author?.Id, // Sử dụng AuthorId của bài viết hiện tại
       SourceId: this.currentArticle.Source?.Id || null,
       Tags: this.currentArticle.ArticleTags?.$values?.map((at: any) => at.Tag?.Name) || []
     };
@@ -415,19 +417,24 @@ export class EditorArticleManagerComponent implements OnInit {
     console.log('Toggling visibility with data:', articleData);
 
     this.articleService.update(this.currentArticle.Id, articleData).subscribe({
-      next: () => {
+      next: (updatedArticle) => {
         // Update the article's IsPublished status in the local array
-        this.currentArticle.IsPublished = !this.currentArticle.IsPublished;
+        const articleIndex = this.articles.findIndex(a => a.Id === this.currentArticle.Id);
+        if (articleIndex !== -1) {
+          this.articles[articleIndex].IsPublished = !this.articles[articleIndex].IsPublished;
+          this.currentArticle.IsPublished = !this.currentArticle.IsPublished;
+        }
+        
         this.saving = false;
         this.showVisibilityModal = false;
         const status = this.currentArticle.IsPublished ? 'đã xuất bản' : 'chưa xuất bản';
-        this.toastr.success(`Bài viết đã được đặt thành ${status}`, 'Thành công');
+        this.zooToast.success(`Bài viết đã được đặt thành ${status}`, 'Thành công');
         // Re-apply filters to update the filtered list
         this.applyFilters();
       },
       error: (err: any) => {
         console.error('Error updating article visibility', err);
-        this.toastr.error(err.error?.title || 'Không thể cập nhật trạng thái bài viết', 'Lỗi');
+        this.zooToast.error(err.error?.title || 'Không thể cập nhật trạng thái bài viết', 'Lỗi');
         this.saving = false;
       }
     });
@@ -477,17 +484,17 @@ export class EditorArticleManagerComponent implements OnInit {
 
   validateForm(): boolean {
     if (!this.editData.Title?.trim()) {
-      this.toastr.warning('Vui lòng nhập tiêu đề bài viết', 'Thiếu thông tin');
+      this.zooToast.warning('Vui lòng nhập tiêu đề bài viết', 'Thiếu thông tin');
       return false;
     }
 
     if (!this.editData.CategoryId) {
-      this.toastr.warning('Vui lòng chọn danh mục', 'Thiếu thông tin');
+      this.zooToast.warning('Vui lòng chọn danh mục', 'Thiếu thông tin');
       return false;
     }
 
     if (!this.editData.Content?.trim()) {
-      this.toastr.warning('Vui lòng nhập nội dung bài viết', 'Thiếu thông tin');
+      this.zooToast.warning('Vui lòng nhập nội dung bài viết', 'Thiếu thông tin');
       return false;
     }
 
@@ -527,11 +534,11 @@ export class EditorArticleManagerComponent implements OnInit {
           this.loadArticles();
           this.showModal = false;
           this.saving = false;
-          this.toastr.success('Bài viết đã được cập nhật thành công', 'Thành công');
+          this.zooToast.success('Bài viết đã được cập nhật thành công', 'Thành công');
         },
         error: (err: any) => {
           console.error('Error updating article', err);
-          this.toastr.error(err.error?.title || 'Không thể cập nhật bài viết', 'Lỗi');
+          this.zooToast.error(err.error?.title || 'Không thể cập nhật bài viết', 'Lỗi');
           this.saving = false;
         }
       });
@@ -557,11 +564,11 @@ export class EditorArticleManagerComponent implements OnInit {
           this.loadArticles();
           this.showModal = false;
           this.saving = false;
-          this.toastr.success('Bài viết đã được tạo thành công', 'Thành công');
+          this.zooToast.success('Bài viết đã được tạo thành công', 'Thành công');
         },
         error: (err: any) => {
           console.error('Error creating article', err);
-          this.toastr.error(err.error?.title || 'Không thể tạo bài viết mới', 'Lỗi');
+          this.zooToast.error(err.error?.title || 'Không thể tạo bài viết mới', 'Lỗi');
           this.saving = false;
         }
       });
@@ -573,30 +580,37 @@ export class EditorArticleManagerComponent implements OnInit {
     // Lấy bài viết cần xóa
     const article = this.articles.find(a => a.Id === id);
     if (!article) {
-      this.toastr.error('Không tìm thấy bài viết', 'Lỗi');
+      this.zooToast.error('Không tìm thấy bài viết');
       return;
     }
     
     // Kiểm tra quyền: Chỉ admin hoặc người tạo bài viết mới có quyền xóa
     if (!this.authService.isAdmin() && article.CreatedByUserId !== this.currentUser.id) {
-      this.toastr.warning('Bạn không có quyền xóa bài viết này', 'Không được phép');
+      this.zooToast.warning('Bạn không có quyền xóa bài viết này', 'Không được phép');
       return;
     }
     
-    if (confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
-      this.loading = true;
-      this.articleService.delete(id).subscribe({
-        next: () => {
-          this.loadArticles();
-          this.toastr.success('Bài viết đã được xóa thành công', 'Thành công');
-        },
-        error: (err: any) => {
-          console.error('Error deleting article', err);
-          this.toastr.error('Không thể xóa bài viết', 'Lỗi');
-          this.loading = false;
-        }
-      });
-    }
+    // Sử dụng hộp thoại xác nhận tùy chỉnh thay vì confirm mặc định
+    this.zooToast.confirm({
+      title: 'Xác nhận xóa bài viết',
+      message: `Bạn có chắc chắn muốn xóa bài viết "<strong>${article.Title}</strong>"?<br><br>Hành động này không thể hoàn tác và bài viết sẽ bị xóa vĩnh viễn.`,
+      confirmText: 'Xóa',
+      cancelText: 'Hủy',
+      onConfirm: () => {
+        this.loading = true;
+        this.articleService.delete(id).subscribe({
+          next: () => {
+            this.loadArticles();
+            this.zooToast.success('Bài viết đã được xóa thành công');
+          },
+          error: (err: any) => {
+            console.error('Error deleting article', err);
+            this.zooToast.error('Không thể xóa bài viết');
+            this.loading = false;
+          }
+        });
+      }
+    });
   }
 
   getAuthorName(authorId: number): string {
