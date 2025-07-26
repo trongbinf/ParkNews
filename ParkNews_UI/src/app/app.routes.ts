@@ -46,14 +46,35 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/profile/profile.component').then(c => c.ProfileComponent)
   },
   {
+    path: 'favorites',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/favorites/favorites.component').then(c => c.FavoritesComponent)
+  },
+  {
+    path: 'auth',
+    children: [
+      {
+        path: 'login',
+        loadComponent: () => import('./auth/login/login.component').then(c => c.LoginComponent)
+      },
+      {
+        path: 'register',
+        loadComponent: () => import('./auth/register/register.component').then(c => c.RegisterComponent)
+      },
+      {
+        path: 'forgot-password',
+        loadComponent: () => import('./auth/forgot-password/forgot-password.component').then(c => c.ForgotPasswordComponent)
+      },
+      {
+        path: 'reset-password',
+        loadComponent: () => import('./auth/reset-password/reset-password.component').then(c => c.ResetPasswordComponent)
+      }
+    ]
+  },
+  {
     path: 'admin',
     canActivate: [adminGuard],
     children: [
-      {
-        path: '',
-        redirectTo: 'dashboard',
-        pathMatch: 'full'
-      },
       {
         path: 'dashboard',
         loadComponent: () => import('./admin/dashboard/dashboard.component').then(c => c.DashboardComponent)
@@ -61,10 +82,6 @@ export const routes: Routes = [
       {
         path: 'articles',
         loadComponent: () => import('./admin/article-manager/article-manager.component').then(c => c.ArticleManagerComponent)
-      },
-      {
-        path: 'articles/:id',
-        loadComponent: () => import('./admin/article-detail/article-detail.component').then(c => c.ArticleDetailComponent)
       },
       {
         path: 'categories',
@@ -97,42 +114,16 @@ export const routes: Routes = [
     canActivate: [editorGuard],
     children: [
       {
-        path: '',
-        redirectTo: 'articles',
-        pathMatch: 'full'
-      },
-      {
         path: 'articles',
         loadComponent: () => import('./editor/editor-article-manager/editor-article-manager.component').then(c => c.EditorArticleManagerComponent)
       },
       {
-        path: 'articles/:id',
+        path: 'article/new',
         loadComponent: () => import('./editor/editor-article-detail/editor-article-detail.component').then(c => c.EditorArticleDetailComponent)
       },
       {
-        path: 'new-article',
+        path: 'article/:id',
         loadComponent: () => import('./editor/editor-article-detail/editor-article-detail.component').then(c => c.EditorArticleDetailComponent)
-      }
-    ]
-  },
-  {
-    path: 'auth',
-    children: [
-      {
-        path: 'login',
-        loadComponent: () => import('./auth/login/login.component').then(c => c.LoginComponent)
-      },
-      {
-        path: 'register',
-        loadComponent: () => import('./auth/register/register.component').then(c => c.RegisterComponent)
-      },
-      {
-        path: 'forgot-password',
-        loadComponent: () => import('./auth/forgot-password/forgot-password.component').then(c => c.ForgotPasswordComponent)
-      },
-      {
-        path: 'reset-password',
-        loadComponent: () => import('./auth/reset-password/reset-password.component').then(c => c.ResetPasswordComponent)
       }
     ]
   },

@@ -98,8 +98,8 @@ export class EditorArticleManagerComponent implements OnInit {
     this.currentUser = this.authService.getCurrentUser();
     console.log('Current user in editor article manager:', this.currentUser);
     
-    // Kiểm tra quyền chuyển trạng thái bài viết
-    this.hasVisibilityPermission = this.authService.hasRole('Editor') || this.authService.hasRole('Admin');
+    // Chỉ admin mới có quyền xuất bản bài viết
+    this.hasVisibilityPermission = this.authService.isAdmin();
     this.loadArticles();
     this.loadCategories();
     this.loadAuthors();
@@ -333,11 +333,22 @@ export class EditorArticleManagerComponent implements OnInit {
 
   openModal(article?: any) {
     if (article) {
-      // Không cần kiểm tra qua email của Author nữa
       // Kiểm tra nếu người tạo bài viết không phải là người dùng hiện tại và không phải admin
       if (!this.authService.isAdmin() && article.CreatedByUserId !== this.currentUser.id) {
         this.zooToast.warning('Bạn không có quyền chỉnh sửa bài viết này', 'Không được phép');
         return;
+      }
+      
+      // Kiểm tra thời gian xuất bản
+      if (article.IsPublished) {
+        const publishDate = new Date(article.PublishDate);
+        const now = new Date();
+        const hoursSincePublish = (now.getTime() - publishDate.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSincePublish > 24 && !this.authService.isAdmin()) {
+          this.zooToast.warning('Không thể chỉnh sửa bài viết đã xuất bản quá 24 giờ', 'Không được phép');
+          return;
+        }
       }
       
       console.log('Opening modal with article:', article);
@@ -359,7 +370,7 @@ export class EditorArticleManagerComponent implements OnInit {
         Content: '',
         Summary: '',
         FeaturedImageUrl: '',
-        IsPublished: false,
+        IsPublished: false, // Mặc định là chưa xuất bản
         CategoryId: null,
         AuthorId: null,
         SourceId: null,
@@ -380,15 +391,9 @@ export class EditorArticleManagerComponent implements OnInit {
 
   // Mở modal xác nhận thay đổi trạng thái bài viết
   openVisibilityModal(article: any) {
-    // Kiểm tra quyền chuyển trạng thái bài viết
-    if (!this.hasVisibilityPermission) {
-      this.zooToast.warning('Bạn không có quyền thay đổi trạng thái bài viết', 'Không được phép');
-      return;
-    }
-    
-    // Kiểm tra nếu người tạo bài viết không phải là người dùng hiện tại và không phải admin
-    if (!this.authService.isAdmin() && article.CreatedByUserId !== this.currentUser.id) {
-      this.zooToast.warning('Bạn không có quyền thay đổi trạng thái bài viết này', 'Không được phép');
+    // Chỉ admin mới có quyền xuất bản bài viết
+    if (!this.authService.isAdmin()) {
+      this.zooToast.warning('Chỉ quản trị viên mới có quyền xuất bản bài viết', 'Không được phép');
       return;
     }
     
@@ -399,6 +404,12 @@ export class EditorArticleManagerComponent implements OnInit {
   // Thay đổi trạng thái xuất bản của bài viết
   toggleArticleVisibility() {
     if (!this.currentArticle) return;
+    
+    // Chỉ admin mới có quyền xuất bản bài viết
+    if (!this.authService.isAdmin()) {
+      this.zooToast.warning('Chỉ quản trị viên mới có quyền xuất bản bài viết', 'Không được phép');
+      return;
+    }
     
     this.saving = true;
     const articleData = {
@@ -427,9 +438,10 @@ export class EditorArticleManagerComponent implements OnInit {
         
         this.saving = false;
         this.showVisibilityModal = false;
+        
         const status = this.currentArticle.IsPublished ? 'đã xuất bản' : 'chưa xuất bản';
         this.zooToast.success(`Bài viết đã được đặt thành ${status}`, 'Thành công');
-        // Re-apply filters to update the filtered list
+        
         this.applyFilters();
       },
       error: (err: any) => {
@@ -505,13 +517,17 @@ export class EditorArticleManagerComponent implements OnInit {
     if (!this.validateForm()) {
       return;
     }
-
+    
     this.saving = true;
     
     // Ensure tags is always an array
     const tags = this.editData.tags || [];
     
-    // Sử dụng AuthorId từ form thay vì tự động lấy từ API
+    // Đảm bảo IsPublished luôn là false khi tạo mới bài viết
+    if (!this.editData.Id) {
+      this.editData.IsPublished = false;
+    }
+    
     if (this.editData.Id) {
       // For update
       const updateData = {
@@ -543,13 +559,13 @@ export class EditorArticleManagerComponent implements OnInit {
         }
       });
     } else {
-      // For create
+      // For create - luôn đặt IsPublished = false khi tạo mới
       const createData = {
         Title: this.editData.Title.trim(),
         Content: this.editData.Content.trim(),
         Description: this.editData.Summary?.trim() || '',
         ImageUrl: this.editData.FeaturedImageUrl?.trim() || '',
-        IsPublished: this.editData.IsPublished,
+        IsPublished: false, // Luôn chưa xuất bản khi tạo mới
         IsFeatured: false, // Editor không thể đặt bài viết làm nổi bật
         CategoryId: this.editData.CategoryId,
         AuthorId: this.editData.AuthorId,
@@ -597,19 +613,19 @@ export class EditorArticleManagerComponent implements OnInit {
       confirmText: 'Xóa',
       cancelText: 'Hủy',
       onConfirm: () => {
-        this.loading = true;
-        this.articleService.delete(id).subscribe({
-          next: () => {
-            this.loadArticles();
+      this.loading = true;
+      this.articleService.delete(id).subscribe({
+        next: () => {
+          this.loadArticles();
             this.zooToast.success('Bài viết đã được xóa thành công');
-          },
+        },
           error: (err: any) => {
-            console.error('Error deleting article', err);
+          console.error('Error deleting article', err);
             this.zooToast.error('Không thể xóa bài viết');
-            this.loading = false;
-          }
-        });
-      }
+          this.loading = false;
+        }
+      });
+    }
     });
   }
 
@@ -639,5 +655,31 @@ export class EditorArticleManagerComponent implements OnInit {
     const adminEmails = ['admin@parknews.com'];
     return adminEmails.includes(article.Author?.Email) || 
            (article.CreatedByUserId && article.CreatedByUserId !== this.currentUser.id && !this.isCurrentUserArticle(article));
+  }
+
+  // Kiểm tra xem bài viết có thể chỉnh sửa không (dựa vào thời gian xuất bản)
+  canEditArticle(article: any): boolean {
+    // Admin luôn có thể chỉnh sửa
+    if (this.authService.isAdmin()) {
+      return true;
+    }
+    
+    // Nếu không phải người tạo bài viết
+    if (article.CreatedByUserId !== this.currentUser.id) {
+      return false;
+    }
+    
+    // Nếu bài viết chưa xuất bản, có thể chỉnh sửa
+    if (!article.IsPublished) {
+      return true;
+    }
+    
+    // Kiểm tra thời gian xuất bản
+    const publishDate = new Date(article.PublishDate);
+    const now = new Date();
+    const hoursSincePublish = (now.getTime() - publishDate.getTime()) / (1000 * 60 * 60);
+    
+    // Chỉ có thể chỉnh sửa trong vòng 24 giờ sau khi xuất bản
+    return hoursSincePublish <= 24;
   }
 } 

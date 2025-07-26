@@ -1,89 +1,72 @@
-<div id="top" class="article-page">
-  <!-- Loading indicator -->
-  <div class="loading-container" *ngIf="isLoading">
-    <div class="spinner"></div>
-    <p>Đang tải bài viết...</p>
+<div class="article-detail-container" *ngIf="!isLoading && article">
+  <div class="article-header">
+    <div class="article-meta">
+      <span class="article-category" *ngIf="article.Category">
+        <a [routerLink]="['/category', article.Category.Id]">{{article.Category.Name}}</a>
+      </span>
+      <span class="article-date">{{getFormattedDate(article.PublishDate)}}</span>
+    </div>
+    <h1 class="article-title">{{article.Title}}</h1>
+    <div class="article-author" *ngIf="article.Author">
+      <span class="author-name">Bởi {{article.Author.FullName}}</span>
+    </div>
+    <div class="article-actions">
+      <button class="btn-favorite" [class.active]="isFavorite" (click)="toggleFavorite()" title="Thêm vào yêu thích">
+        <i class="fas" [ngClass]="isFavorite ? 'fa-heart' : 'fa-heart-o'"></i>
+        {{isFavorite ? 'Đã thêm vào yêu thích' : 'Thêm vào yêu thích'}}
+      </button>
+    </div>
   </div>
-
-  <!-- Error message -->
-  <div class="error-container" *ngIf="error">
-    <p>{{ error }}</p>
-    <button (click)="loadArticleById(article ? article.Id : 0)" *ngIf="article" class="btn btn-primary">Thử lại</button>
-    <a routerLink="/" class="btn btn-outline">Quay về trang chủ</a>
+  
+  <div class="article-featured-image" *ngIf="article.FeaturedImageUrl">
+    <img [src]="article.FeaturedImageUrl" [alt]="article.Title">
   </div>
-
-  <div *ngIf="!isLoading && !error && article" class="article-container">
-    <!-- Article Header -->
-    <div class="article-header">
-      <div class="container">
-        <div class="article-meta">
-          <a [routerLink]="['/category', article.Category?.Id]" [fragment]="'top'" class="article-category">
-            {{ article.Category?.Name || 'Tin tức' }}
-          </a>
-          <span class="article-date">{{ getFormattedDate(article.PublishDate) }}</span>
-        </div>
-        <h1 class="article-title">{{ article.Title }}</h1>
-        <div class="article-author" *ngIf="article.Author">
-          <span>Tác giả: <strong>{{ article.Author.FullName }}</strong></span>
-        </div>
-      </div>
+  
+  <div class="article-content" [innerHTML]="article.Content"></div>
+  
+  <div class="article-tags" *ngIf="article.ArticleTags && article.ArticleTags.$values && article.ArticleTags.$values.length > 0">
+    <h3>Thẻ:</h3>
+    <div class="tags-list">
+      <a class="tag" *ngFor="let articleTag of article.ArticleTags.$values" [routerLink]="['/tag', articleTag.Tag.Id]">
+        {{articleTag.Tag.Name}}
+      </a>
     </div>
-
-    <!-- Featured Image -->
-    <div class="featured-image-container" *ngIf="article.FeaturedImageUrl">
-      <div class="container">
-        <div class="featured-image" [ngStyle]="{'background-image': 'url(' + article.FeaturedImageUrl + ')'}"></div>
-      </div>
-    </div>
-
-    <!-- Article Content -->
-    <div class="article-content-container">
-      <div class="container">
-        <div class="article-content">
-          <div class="article-summary" *ngIf="article.Summary">
-            <p>{{ article.Summary }}</p>
-          </div>
-          <div class="article-body" [innerHTML]="article.Content"></div>
-        </div>
-        
-        <!-- Article Tags -->
-        <div class="article-tags" *ngIf="article.ArticleTags && article.ArticleTags.$values && article.ArticleTags.$values.length > 0">
-          <h3>Từ khóa:</h3>
-          <div class="tags-list">
-            <a *ngFor="let articleTag of article.ArticleTags.$values" 
-               [routerLink]="['/tag', articleTag.Tag.Id]"
-               [fragment]="'top'"
-               class="tag-item">
-              # {{ articleTag.Tag.Name }}
-            </a>
-          </div>
-        </div>
-        
-        <!-- Article Source -->
-        <div class="article-source" *ngIf="article.Source">
-          <p>Nguồn: <strong>{{ article.Source.Name }}</strong></p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Related Articles -->
-    <div class="related-articles-container" *ngIf="relatedArticles.length > 0">
-      <div class="container">
-        <h2 class="section-title">Bài viết liên quan</h2>
-        <div class="related-articles-grid">
-          <a *ngFor="let relatedArticle of relatedArticles" [routerLink]="['/article/slug', relatedArticle.Slug]" [fragment]="'top'" class="article-card">
-            <div class="card-image" [ngStyle]="{'background-image': 'url(' + relatedArticle.FeaturedImageUrl + ')'}">
-              <div class="card-category">{{ relatedArticle.Category?.Name || 'Tin tức' }}</div>
-            </div>
-            <div class="card-content">
-              <h3 class="card-title">{{ relatedArticle.Title }}</h3>
-              <div class="card-meta">
-                <span class="card-date">{{ getFormattedDate(relatedArticle.PublishDate) }}</span>
-              </div>
-            </div>
+  </div>
+  
+  <div class="article-related" *ngIf="relatedArticles && relatedArticles.length > 0">
+    <h3>Bài viết liên quan</h3>
+    <div class="related-articles">
+      <div class="related-article" *ngFor="let relatedArticle of relatedArticles">
+        <div class="related-image" *ngIf="relatedArticle.FeaturedImageUrl">
+          <a [routerLink]="['/article/slug', relatedArticle.Slug]">
+            <img [src]="relatedArticle.FeaturedImageUrl" [alt]="relatedArticle.Title">
           </a>
         </div>
+        <div class="related-content">
+          <h4 class="related-title">
+            <a [routerLink]="['/article/slug', relatedArticle.Slug]">{{relatedArticle.Title}}</a>
+          </h4>
+          <p class="related-date">{{getFormattedDate(relatedArticle.PublishDate)}}</p>
+        </div>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="loading-container" *ngIf="isLoading">
+  <div class="loading-spinner">
+    <i class="fas fa-spinner fa-spin"></i>
+    <span>Đang tải...</span>
+  </div>
+</div>
+
+<div class="error-container" *ngIf="!isLoading && error">
+  <div class="error-message">
+    <i class="fas fa-exclamation-circle"></i>
+    <h2>{{error}}</h2>
+    <p>Không thể tải bài viết. Vui lòng thử lại sau.</p>
+    <button class="btn-retry" (click)="loadArticleById(article?.Id || 0)">
+      <i class="fas fa-sync"></i> Thử lại
+    </button>
   </div>
 </div> 

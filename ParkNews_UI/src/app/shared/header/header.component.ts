@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { ArticleService, Article } from '../../services/article.service';
 
 @Component({
   selector: 'app-header',
@@ -10,6 +11,24 @@ import { AuthService } from '../../services/auth.service';
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
     <header class="park-header">
+      <!-- Breaking News Banner -->
+      <div class="breaking-news" *ngIf="featuredArticles.length > 0">
+        <div class="container">
+          <div class="breaking-news-content">
+            <div class="breaking-news-label">
+              <i class="fas fa-bolt"></i> TIN NÓNG
+            </div>
+            <div class="breaking-news-slider">
+              <div class="breaking-news-items">
+                <a *ngFor="let article of featuredArticles" [routerLink]="['/article/slug', article.Slug]" class="breaking-news-item">
+                  {{article.Title}}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div class="container">
         <div class="header-content">
           <div class="logo">
@@ -51,6 +70,12 @@ import { AuthService } from '../../services/auth.service';
                     <li *ngIf="isAdmin"><a routerLink="/admin/dashboard">Dashboard</a></li>
                     <li *ngIf="isEditor"><a routerLink="/editor/articles">Quản lý bài viết</a></li>
                     <li><a routerLink="/profile">Hồ sơ</a></li>
+                    <li *ngIf="isReader"><a routerLink="/favorites">
+                      <span class="favorite-menu-item">
+                        Bài viết yêu thích
+                        <span class="favorite-count" *ngIf="favoriteCount > 0">{{favoriteCount}}</span>
+                      </span>
+                    </a></li>
                     <li><a href="javascript:void(0)" (click)="logout()">Đăng xuất</a></li>
                   </ul>
                 </div>
@@ -104,6 +129,69 @@ import { AuthService } from '../../services/auth.service';
       right: 0;
       z-index: 1000;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Breaking News Styles */
+    .breaking-news {
+      background-color: #f44336;
+      color: white;
+      padding: 8px 0;
+      margin-bottom: 15px;
+      overflow: hidden;
+    }
+    
+    .breaking-news-content {
+      display: flex;
+      align-items: center;
+    }
+    
+    .breaking-news-label {
+      background-color: #d32f2f;
+      color: white;
+      font-weight: bold;
+      padding: 5px 15px;
+      margin-right: 15px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+    
+    .breaking-news-label i {
+      margin-right: 5px;
+    }
+    
+    .breaking-news-slider {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .breaking-news-items {
+      display: flex;
+      animation: scroll 30s linear infinite;
+    }
+    
+    .breaking-news-item {
+      color: white;
+      text-decoration: none;
+      padding: 0 20px;
+      white-space: nowrap;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+    
+    .breaking-news-item:hover {
+      color: #ffeb3b;
+    }
+    
+    @keyframes scroll {
+      0% {
+        transform: translateX(100%);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
     }
     
     .container {
@@ -309,6 +397,27 @@ import { AuthService } from '../../services/auth.service';
       color: #2ecc71;
     }
     
+    /* Favorite menu item styles */
+    .favorite-menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .favorite-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #2ecc71;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
     /* Search Modal */
     .search-overlay {
       position: fixed;
@@ -407,6 +516,11 @@ import { AuthService } from '../../services/auth.service';
       .nav-list {
         gap: 15px;
       }
+      
+      .breaking-news-label {
+        padding: 5px 10px;
+        margin-right: 10px;
+      }
     }
     
     @media (max-width: 768px) {
@@ -436,6 +550,15 @@ import { AuthService } from '../../services/auth.service';
       .user-info:hover .user-dropdown {
         transform: translateX(50%) translateY(0);
       }
+      
+      .breaking-news-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .breaking-news-label {
+        margin-bottom: 5px;
+      }
     }
     
     @media (max-width: 576px) {
@@ -454,18 +577,41 @@ export class HeaderComponent implements OnInit {
   isLoggedIn = false;
   isAdmin = false;
   isEditor = false;
+  isReader = false;
   currentUser: any = null;
   isSearchOpen = false;
   searchTerm = '';
+  favoriteCount = 0;
+  featuredArticles: Article[] = [];
   
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private articleService: ArticleService
+  ) {}
   
   ngOnInit(): void {
     this.updateAuthStatus();
+    this.loadFeaturedArticles();
     
     // Subscribe to auth changes
     this.authService.user$.subscribe(() => {
       this.updateAuthStatus();
+    });
+    
+    // Subscribe to favorites changes
+    this.articleService.favorites$.subscribe(() => {
+      this.updateFavoriteCount();
+    });
+  }
+  
+  loadFeaturedArticles(): void {
+    this.articleService.getFeatured().subscribe(articles => {
+      if (articles && articles.length > 0) {
+        // Lấy tối đa 5 bài viết nổi bật
+        this.featuredArticles = articles
+          .filter(article => article.IsPublished)
+          .slice(0, 5);
+      }
     });
   }
   
@@ -474,6 +620,16 @@ export class HeaderComponent implements OnInit {
     this.currentUser = this.authService.getCurrentUser();
     this.isAdmin = this.authService.isAdmin();
     this.isEditor = this.authService.isEditor();
+    this.isReader = this.authService.hasRole('Reader') || 
+                    (!this.isAdmin && !this.isEditor && this.isLoggedIn);
+    
+    if (this.isLoggedIn) {
+      this.updateFavoriteCount();
+    }
+  }
+  
+  updateFavoriteCount(): void {
+    this.favoriteCount = this.articleService.getFavoriteCount();
   }
   
   getUserDisplayName(): string {

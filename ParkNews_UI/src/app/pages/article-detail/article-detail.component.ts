@@ -1,15 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ArticleService, Article } from '../../services/article.service';
-import { HttpClientModule } from '@angular/common/http';
+import { AuthService } from '../../services/auth.service';
 import { catchError, finalize, of } from 'rxjs';
 import { ZooToastService } from '../../shared/components/zoo-toast/zoo-toast.component';
 
 @Component({
   selector: 'app-article-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, HttpClientModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './article-detail.component.html',
   styleUrl: './article-detail.component.css'
 })
@@ -18,15 +18,20 @@ export class ArticleDetailComponent implements OnInit {
   relatedArticles: Article[] = [];
   isLoading: boolean = true;
   error: string | null = null;
-  
+  isLoggedIn: boolean = false;
+  isFavorite: boolean = false;
+
   constructor(
     private articleService: ArticleService,
+    private authService: AuthService,
     private route: ActivatedRoute,
     private router: Router,
     private zooToast: ZooToastService
   ) {}
 
   ngOnInit(): void {
+    this.isLoggedIn = this.authService.isLoggedIn();
+    
     // Get article identifier from route params
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -74,6 +79,7 @@ export class ArticleDetailComponent implements OnInit {
         }
         
         this.article = article;
+        this.checkIfFavorite();
         this.loadRelatedArticles();
       } else {
         this.error = 'Không tìm thấy bài viết';
@@ -109,6 +115,7 @@ export class ArticleDetailComponent implements OnInit {
         }
         
         this.article = foundArticle;
+        this.checkIfFavorite();
         this.loadRelatedArticles();
       } else {
         this.error = 'Không tìm thấy bài viết';
@@ -127,25 +134,42 @@ export class ArticleDetailComponent implements OnInit {
       })
     ).subscribe(articles => {
       // Filter out the current article and limit to 3 related articles
-      // Also filter out unpublished articles
       this.relatedArticles = articles
-        .filter(a => a.Id !== this.article?.Id && a.IsPublished)
+        .filter(a => a.Id !== this.article?.Id && a.IsPublished) // Filter out unpublished
         .slice(0, 3);
     });
   }
-
-  getFormattedDate(dateString: string): string {
-    if (!dateString) return '';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('vi-VN', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return dateString;
+  
+  checkIfFavorite(): void {
+    if (this.isLoggedIn && this.article) {
+      this.isFavorite = this.articleService.isFavorite(this.article.Id);
     }
+  }
+  
+  toggleFavorite(): void {
+    if (!this.isLoggedIn) {
+      this.zooToast.warning('Vui lòng đăng nhập để thêm bài viết vào mục yêu thích', 'Thông báo');
+      return;
+    }
+    
+    if (!this.article) return;
+    
+    this.articleService.toggleFavorite(this.article.Id);
+    this.isFavorite = !this.isFavorite;
+    
+    if (this.isFavorite) {
+      this.zooToast.success('Đã thêm bài viết vào mục yêu thích', 'Thành công');
+    } else {
+      this.zooToast.success('Đã xóa bài viết khỏi mục yêu thích', 'Thành công');
+    }
+  }
+  
+  getFormattedDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   }
 } 

@@ -60,15 +60,15 @@
         <p class="article-category" *ngIf="article.Category">{{article.Category.Name}}</p>
         <p class="article-date">{{article.PublishDate | date:'dd/MM/yyyy'}}</p>
         <div class="article-actions">
-          <button class="btn btn-sm btn-outline-primary" (click)="openModal(article)" [disabled]="!isCurrentUserArticle(article) && !authService.isAdmin()">
+          <button class="btn btn-sm btn-outline-primary" (click)="openModal(article)" [disabled]="!canEditArticle(article)">
             <i class="fas fa-edit"></i> Sửa
           </button>
-          <button class="btn btn-sm btn-outline-success" (click)="openVisibilityModal(article)" *ngIf="hasVisibilityPermission" [disabled]="!isCurrentUserArticle(article) && !authService.isAdmin()">
+          <button class="btn btn-sm btn-outline-success" (click)="openVisibilityModal(article)" *ngIf="hasVisibilityPermission">
             <i class="fas" [ngClass]="article.IsPublished ? 'fa-eye-slash' : 'fa-eye'"></i>
             {{ article.IsPublished ? 'Ẩn' : 'Hiển thị' }}
           </button>
-          <!-- Sửa nút xóa bài viết -->
-          <button class="btn btn-sm btn-outline-danger" (click)="deleteArticle(article.Id)" *ngIf="authService.isAdmin() || isCurrentUserArticle(article)">
+          <!-- Chỉ hiển thị nút xóa cho admin -->
+          <button class="btn btn-sm btn-outline-danger" (click)="deleteArticle(article.Id)" *ngIf="authService.isAdmin()">
             <i class="fas fa-trash"></i> Xóa
           </button>
           <!-- Cập nhật nút xem bài viết để sử dụng đúng route với slug -->
@@ -205,16 +205,23 @@
                 </div>
               </div>
             </div>
-            <!-- Publishing Options Section -->
+            <!-- Publishing options -->
             <div class="form-section">
-              <h6 class="section-title">Tùy chọn xuất bản</h6>
+              <h3 class="section-title">Tùy chọn xuất bản</h3>
               <div class="publishing-options">
-                <div class="form-check">
-                  <input type="checkbox" id="isPublished" name="isPublished" [(ngModel)]="editData.IsPublished" class="form-check-input">
+                <!-- Chỉ hiển thị tùy chọn xuất bản cho admin -->
+                <div class="form-check" *ngIf="authService.isAdmin()">
+                  <input class="form-check-input" type="checkbox" id="isPublished" name="isPublished" [(ngModel)]="editData.IsPublished">
                   <label class="form-check-label" for="isPublished">
-                    <i class="fas fa-upload"></i> Xuất bản bài viết
+                    <i class="fas" [ngClass]="editData.IsPublished ? 'fa-eye' : 'fa-eye-slash'"></i>
+                    Xuất bản bài viết
                   </label>
-                  <small class="form-text text-muted">Bài viết sẽ hiển thị công khai trên trang web</small>
+                  <small class="form-text text-muted">Bài viết sẽ hiển thị công khai trên trang web nếu được xuất bản.</small>
+                </div>
+                <!-- Thông báo cho người dùng không phải admin -->
+                <div class="alert alert-info" *ngIf="!authService.isAdmin()">
+                  <i class="fas fa-info-circle"></i>
+                  Bài viết sẽ được lưu ở trạng thái chưa xuất bản. Chỉ quản trị viên mới có quyền xuất bản bài viết.
                 </div>
               </div>
             </div>

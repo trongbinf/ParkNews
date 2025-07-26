@@ -1,7 +1,7 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable, map, catchError, of, BehaviorSubject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { API_URLS } from './api-urls';
 
@@ -75,8 +75,15 @@ export interface UpdateArticleDTO extends CreateArticleDTO {
 })
 export class ArticleService {
   private apiUrl = API_URLS.article;
+  private readonly FAVORITES_KEY = 'favoriteArticles';
+  
+  // BehaviorSubject để theo dõi thay đổi danh sách yêu thích
+  private favoritesSubject = new BehaviorSubject<number[]>(this.getFavoriteIds());
+  favorites$ = this.favoritesSubject.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  // Các phương thức hiện có
 
   getAll(): Observable<Article[]> {
     return this.http.get<ArticleResponse>(this.apiUrl).pipe(
@@ -195,5 +202,85 @@ export class ArticleService {
 
   delete(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
+  }
+
+  // Phương thức quản lý bài viết yêu thích
+  
+  /**
+   * Lấy danh sách ID bài viết yêu thích từ localStorage
+   */
+  getFavoriteIds(): number[] {
+    const favoritesJson = localStorage.getItem(this.FAVORITES_KEY);
+    return favoritesJson ? JSON.parse(favoritesJson) : [];
+  }
+  
+  /**
+   * Lưu danh sách ID bài viết yêu thích vào localStorage
+   */
+  private saveFavoriteIds(ids: number[]): void {
+    localStorage.setItem(this.FAVORITES_KEY, JSON.stringify(ids));
+    this.favoritesSubject.next(ids);
+  }
+  
+  /**
+   * Kiểm tra xem bài viết có trong danh sách yêu thích không
+   */
+  isFavorite(articleId: number): boolean {
+    return this.getFavoriteIds().includes(articleId);
+  }
+  
+  /**
+   * Thêm bài viết vào danh sách yêu thích
+   */
+  addToFavorites(articleId: number): void {
+    const favorites = this.getFavoriteIds();
+    if (!favorites.includes(articleId)) {
+      favorites.push(articleId);
+      this.saveFavoriteIds(favorites);
+    }
+  }
+  
+  /**
+   * Xóa bài viết khỏi danh sách yêu thích
+   */
+  removeFromFavorites(articleId: number): void {
+    const favorites = this.getFavoriteIds();
+    const index = favorites.indexOf(articleId);
+    if (index !== -1) {
+      favorites.splice(index, 1);
+      this.saveFavoriteIds(favorites);
+    }
+  }
+  
+  /**
+   * Toggle trạng thái yêu thích của bài viết
+   */
+  toggleFavorite(articleId: number): void {
+    if (this.isFavorite(articleId)) {
+      this.removeFromFavorites(articleId);
+    } else {
+      this.addToFavorites(articleId);
+    }
+  }
+  
+  /**
+   * Lấy danh sách bài viết yêu thích
+   */
+  getFavoriteArticles(): Observable<Article[]> {
+    const favoriteIds = this.getFavoriteIds();
+    if (favoriteIds.length === 0) {
+      return of([]);
+    }
+    
+    return this.getAll().pipe(
+      map(articles => articles.filter(article => favoriteIds.includes(article.Id)))
+    );
+  }
+  
+  /**
+   * Đếm số lượng bài viết yêu thích
+   */
+  getFavoriteCount(): number {
+    return this.getFavoriteIds().length;
   }
 }
