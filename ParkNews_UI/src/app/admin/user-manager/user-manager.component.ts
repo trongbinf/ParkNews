@@ -16,7 +16,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 })
 export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
   users: UserDTO[] = [];
-  roles: string[] = ['Admin', 'Editor', 'Reader'];
+  roles: string[] = ['Admin', 'Editor', 'Reader', 'Manager'];
   showPasswordModal = false;
   passwordData: ChangePasswordDTO = {
     userId: 0,
@@ -79,6 +79,9 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
           } else if (user.Email === 'reader@parknews.com') {
             user.Roles = ['Reader'];
             user.Role = 'Reader';
+          } else if (user.Email === 'manager@parknews.com') {
+            user.Roles = ['Manager'];
+            user.Role = 'Manager';
           } else {
             // For other users, ensure they have at least a default role
             if (!user.Roles || user.Roles.length === 0) {
@@ -121,6 +124,9 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
           } else if (user.Email === 'reader@parknews.com') {
             user.Roles = ['Reader'];
             user.Role = 'Reader';
+          } else if (user.Email === 'manager@parknews.com') {
+            user.Roles = ['Manager'];
+            user.Role = 'Manager';
           } else {
             // For other users, ensure they have at least a default role
             if (!user.Roles || user.Roles.length === 0) {
@@ -161,6 +167,9 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
       } else if (user.Email === 'reader@parknews.com') {
         this.editData.Roles = ['Reader'];
         this.editData.Role = 'Reader';
+      } else if (user.Email === 'manager@parknews.com') {
+        this.editData.Roles = ['Manager'];
+        this.editData.Role = 'Manager';
       } else if (!this.editData.Roles || this.editData.Roles.length === 0) {
         if (this.editData.Role) {
           this.editData.Roles = [this.editData.Role];
@@ -336,7 +345,8 @@ export class UserManagerComponent extends BaseManagerComponent<UserDTO> {
         // For system users, we don't update roles
         if (this.editData.Email === 'admin@parknews.com' || 
             this.editData.Email === 'editor@parknews.com' || 
-            this.editData.Email === 'reader@parknews.com') {
+            this.editData.Email === 'reader@parknews.com' ||
+            this.editData.Email === 'manager@parknews.com') {
           
           this.toastr.success('Người dùng đã được cập nhật thành công', 'Thành công');
           this.loadItems();

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { adminGuard } from './services/admin-guard.service';
 import { editorGuard } from './services/editor-guard.service';
 import { authGuard } from './services/auth.guard';
+import { managerGuard, adminOrManagerGuard } from './services/manager-guard.service';
 
 export const routes: Routes = [
   {
@@ -73,7 +74,7 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    canActivate: [adminGuard],
+    canActivate: [adminOrManagerGuard],
     children: [
       {
         path: 'dashboard',
@@ -93,6 +94,7 @@ export const routes: Routes = [
       },
       {
         path: 'users',
+        canActivate: [adminGuard],
         loadComponent: () => import('./admin/user-manager/user-manager.component').then(c => c.UserManagerComponent)
       },
       {

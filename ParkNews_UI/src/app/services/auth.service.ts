@@ -74,6 +74,13 @@ export class AuthService {
           localStorage.removeItem('isAdmin');
         }
         
+        // Set isManager flag
+        if (response.user.roles && response.user.roles.includes('Manager')) {
+          localStorage.setItem('isManager', 'true');
+        } else {
+          localStorage.removeItem('isManager');
+        }
+        
         this.currentUserSubject.next(response.user);
       })
     );
@@ -96,6 +103,7 @@ export class AuthService {
     localStorage.removeItem('token');
     localStorage.removeItem('currentUser');
     localStorage.removeItem('isAdmin');
+    localStorage.removeItem('isManager');
     this.currentUserSubject.next(null);
   }
 
@@ -122,6 +130,10 @@ export class AuthService {
   
   isEditor(): boolean {
     return this.hasRole('Editor');
+  }
+
+  isManager(): boolean {
+    return this.hasRole('Manager');
   }
 
   validateEmail(email: string): boolean {

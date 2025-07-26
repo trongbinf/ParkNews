@@ -13,8 +13,8 @@ namespace ParkNews.Data
             var unitOfWork = serviceProvider.GetRequiredService<IUnitOfWork>();
 
             // Seed Roles
-            string[] roleNames = { "Admin", "Editor", "Reader" };
-            string[] roleIds = { "1", "2", "3" };
+            string[] roleNames = { "Admin", "Editor", "Reader", "Manager" };
+            string[] roleIds = { "1", "2", "3", "4" };
 
             for (int i = 0; i < roleNames.Length; i++)
             {
@@ -55,6 +55,33 @@ namespace ParkNews.Data
             else if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
+            }
+
+            // Seed Manager User
+            var managerUser = await userManager.FindByEmailAsync("manager@parknews.com");
+            if (managerUser == null)
+            {
+                managerUser = new ApplicationUser
+                {
+                    UserName = "manager@parknews.com",
+                    Email = "manager@parknews.com",
+                    EmailConfirmed = true,
+                    PhoneNumberConfirmed = true,
+                    FirstName = "Manager",
+                    LastName = "User",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                var result = await userManager.CreateAsync(managerUser, "Manager@123456");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(managerUser, "Manager");
+                }
+            }
+            else if (!await userManager.IsInRoleAsync(managerUser, "Manager"))
+            {
+                await userManager.AddToRoleAsync(managerUser, "Manager");
             }
 
             // Seed Editor User
@@ -167,6 +194,7 @@ namespace ParkNews.Data
                 var adminUserId = adminUser.Id;
                 var editorUserId = editorUser.Id;
                 var readerUserId = readerUser.Id;
+                var managerUserId = managerUser.Id;
                 
                 var authors = new List<Author>
                 {
@@ -204,6 +232,13 @@ namespace ParkNews.Data
                         Bio = "Chuyên gia sức khỏe và y tế",
                         AvatarUrl = "https://via.placeholder.com/150/FFEAA7/FFFFFF?text=HE",
                         UserId = editorUserId
+                    },
+                    new Author { 
+                        FullName = "Lý Thị Phương", 
+                        Email = "lythiphuong@parknews.com", 
+                        Bio = "Quản lý nội dung và biên tập",
+                        AvatarUrl = "https://via.placeholder.com/150/FF9A76/FFFFFF?text=LP",
+                        UserId = managerUserId
                     }
                 };
 
@@ -331,6 +366,20 @@ namespace ParkNews.Data
                         SourceId = sources.First(s => s.Name == "VietnamNet").Id,
                         FeaturedImageUrl = "https://via.placeholder.com/800x400/FFEAA7/FFFFFF?text=BenhCum",
                         CreatedByUserId = editorUser.Id // Editor đăng bài này
+                    },
+                    new Article {
+                        Title = "Xu hướng du lịch bền vững tại Việt Nam",
+                        Slug = "xu-huong-du-lich-ben-vung-tai-viet-nam",
+                        Summary = "Khám phá các mô hình du lịch bền vững đang phát triển tại Việt Nam",
+                        Content = "<p>Du lịch bền vững đang trở thành xu hướng được nhiều du khách và doanh nghiệp lữ hành quan tâm...</p><p>Các mô hình homestay thân thiện với môi trường và du lịch cộng đồng đang phát triển mạnh tại nhiều địa phương...</p>",
+                        PublishDate = DateTime.Now.AddDays(-1),
+                        IsFeatured = true,
+                        IsPublished = true,
+                        CategoryId = categories.First(c => c.Name == "Du lịch").Id,
+                        AuthorId = authors.First(a => a.FullName == "Lý Thị Phương").Id,
+                        SourceId = sources.First(s => s.Name == "VnExpress").Id,
+                        FeaturedImageUrl = "https://via.placeholder.com/800x400/A3D9FF/FFFFFF?text=DuLichBenVung",
+                        CreatedByUserId = managerUser.Id // Manager đăng bài này
                     }
                 };
 
@@ -373,6 +422,11 @@ namespace ParkNews.Data
                     new ArticleTag { 
                         ArticleId = articles.First(a => a.Title.Contains("cúm mùa")).Id,
                         TagId = tags.First(t => t.Name == "Y tế").Id
+                    },
+                    // Article 6 - Du lịch
+                    new ArticleTag { 
+                        ArticleId = articles.First(a => a.Title.Contains("du lịch bền vững")).Id,
+                        TagId = tags.First(t => t.Name == "Du lịch Việt Nam").Id
                     }
                 };
 
@@ -424,6 +478,13 @@ namespace ParkNews.Data
                         PostedAt = DateTime.Now.AddHours(-6),
                         IsApproved = false,
                         ArticleId = articles.First(a => a.Title.Contains("cúm mùa")).Id
+                    },
+                    new Comment {
+                        Content = "Rất thích các mô hình du lịch bền vững, cần phát triển thêm ở Việt Nam",
+                        UserName = "Trần Văn F",
+                        PostedAt = DateTime.Now.AddHours(-2),
+                        IsApproved = true,
+                        ArticleId = articles.First(a => a.Title.Contains("du lịch bền vững")).Id
                     }
                 };
 

@@ -5,7 +5,7 @@
       <p>Admin Dashboard</p>
     </div>
     <div class="dashboard-user">
-      <span *ngIf="currentUser">Xin chào, {{ getUserDisplayName() }}</span>
+      <span *ngIf="currentUser">Xin chào, {{ getUserDisplayName() }} ({{ getUserRole() }})</span>
       <button class="logout-btn" (click)="logout()">Đăng xuất</button>
     </div>
   </header>
@@ -15,7 +15,7 @@
       <nav class="dashboard-nav">
         <ul>
           <li><a routerLink="/admin/dashboard" routerLinkActive="active">Tổng quan</a></li>
-          <li *ngFor="let section of adminSections">
+          <li *ngFor="let section of displaySections">
             <a [routerLink]="section.route" routerLinkActive="active">
               <i class="fas {{section.icon}}"></i> {{section.name}}
             </a>
@@ -32,7 +32,7 @@
       </div>
 
       <div class="dashboard-stats">
-        <div class="stat-card" *ngFor="let section of adminSections" (click)="navigateTo(section.route)">
+        <div class="stat-card" *ngFor="let section of displaySections" (click)="navigateTo(section.route)">
           <div class="stat-icon">
             <i class="fas {{section.icon}}"></i>
           </div>

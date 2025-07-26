@@ -173,8 +173,8 @@ namespace ParkNews.Controllers
             return Ok(roles);
         }
 
-        // POST: api/Users/update-roles
-        [HttpPost("update-roles")]
+        // PUT: api/Users/update-roles
+        [HttpPut("update-roles")]
         public async Task<IActionResult> UpdateUserRoles([FromBody] UpdateRolesDTO model)
         {
             if (model == null || string.IsNullOrEmpty(model.UserId) || model.Roles == null)
@@ -191,7 +191,8 @@ namespace ParkNews.Controllers
             // Don't allow changing roles for system users
             if (user.Email == "admin@parknews.com" || 
                 user.Email == "editor@parknews.com" || 
-                user.Email == "reader@parknews.com")
+                user.Email == "reader@parknews.com" ||
+                user.Email == "manager@parknews.com")
             {
                 return BadRequest("Cannot change roles for system users");
             }

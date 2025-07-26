@@ -46,7 +46,10 @@
             <span *ngIf="user.Email === 'reader@parknews.com'">
               <span class="role-badge role-reader">Reader</span>
             </span>
-            <span *ngIf="user.Email !== 'admin@parknews.com' && user.Email !== 'editor@parknews.com' && user.Email !== 'reader@parknews.com'">
+            <span *ngIf="user.Email === 'manager@parknews.com'">
+              <span class="role-badge role-manager">Manager</span>
+            </span>
+            <span *ngIf="user.Email !== 'admin@parknews.com' && user.Email !== 'editor@parknews.com' && user.Email !== 'reader@parknews.com' && user.Email !== 'manager@parknews.com'">
               <span *ngIf="!user.Roles || user.Roles.length === 0">
                 <span class="role-badge" [ngClass]="'role-' + (user.Role || 'reader').toLowerCase()">{{user.Role || 'Reader'}}</span>
               </span>
@@ -142,14 +145,14 @@
                   [id]="'role_' + role" 
                   [name]="'role_' + role"
                   [checked]="hasRole(role)"
-                  [disabled]="editData.Email === 'admin@parknews.com' || editData.Email === 'editor@parknews.com' || editData.Email === 'reader@parknews.com'"
+                  [disabled]="editData.Email === 'admin@parknews.com' || editData.Email === 'editor@parknews.com' || editData.Email === 'reader@parknews.com' || editData.Email === 'manager@parknews.com'"
                   (change)="toggleRole(role)">
                 <label class="form-check-label" [for]="'role_' + role">
                   {{role}}
                 </label>
               </div>
             </div>
-            <small class="form-text text-muted" *ngIf="editData.Email === 'admin@parknews.com' || editData.Email === 'editor@parknews.com' || editData.Email === 'reader@parknews.com'">
+            <small class="form-text text-muted" *ngIf="editData.Email === 'admin@parknews.com' || editData.Email === 'editor@parknews.com' || editData.Email === 'reader@parknews.com' || editData.Email === 'manager@parknews.com'">
               Vai trò của người dùng hệ thống không thể thay đổi.
             </small>
           </div>

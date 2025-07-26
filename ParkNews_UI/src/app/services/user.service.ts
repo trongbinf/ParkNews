@@ -106,7 +106,7 @@ export class UserService {
       userId: userId,
       roles: roles
     };
-    return this.http.post(`${this.apiUrl}/update-roles`, data);
+    return this.http.put(`${this.apiUrl}/update-roles`, data);
   }
 
   delete(id: number | string): Observable<any> {

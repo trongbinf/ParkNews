@@ -42,7 +42,7 @@ import { ArticleService, Article } from '../../services/article.service';
               <li class="nav-item"><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Trang chủ</a></li>
               <li class="nav-item"><a routerLink="/category" routerLinkActive="active">Danh mục</a></li>
               <li class="nav-item"><a routerLink="/article-list" routerLinkActive="active">Bài viết</a></li>
-              <li class="nav-item" *ngIf="isAdmin"><a routerLink="/admin/dashboard" routerLinkActive="active">Dashboard</a></li>
+              <li class="nav-item" *ngIf="isAdmin || isManager"><a routerLink="/admin/dashboard" routerLinkActive="active">Dashboard</a></li>
               <li class="nav-item" *ngIf="isEditor"><a routerLink="/editor/articles" routerLinkActive="active">Quản lý bài viết</a></li>
             </ul>
           </nav>
@@ -67,10 +67,10 @@ import { ArticleService, Article } from '../../services/article.service';
                 <span class="user-name">{{ getUserDisplayName() }}</span>
                 <div class="user-dropdown">
                   <ul class="dropdown-menu">
-                    <li *ngIf="isAdmin"><a routerLink="/admin/dashboard">Dashboard</a></li>
+                    <li *ngIf="isAdmin || isManager"><a routerLink="/admin/dashboard">Dashboard</a></li>
                     <li *ngIf="isEditor"><a routerLink="/editor/articles">Quản lý bài viết</a></li>
                     <li><a routerLink="/profile">Hồ sơ</a></li>
-                    <li *ngIf="isReader"><a routerLink="/favorites">
+                    <li *ngIf="isReader && !isManager"><a routerLink="/favorites">
                       <span class="favorite-menu-item">
                         Bài viết yêu thích
                         <span class="favorite-count" *ngIf="favoriteCount > 0">{{favoriteCount}}</span>
@@ -578,6 +578,7 @@ export class HeaderComponent implements OnInit {
   isAdmin = false;
   isEditor = false;
   isReader = false;
+  isManager = false;
   currentUser: any = null;
   isSearchOpen = false;
   searchTerm = '';
@@ -620,8 +621,9 @@ export class HeaderComponent implements OnInit {
     this.currentUser = this.authService.getCurrentUser();
     this.isAdmin = this.authService.isAdmin();
     this.isEditor = this.authService.isEditor();
+    this.isManager = this.authService.isManager();
     this.isReader = this.authService.hasRole('Reader') || 
-                    (!this.isAdmin && !this.isEditor && this.isLoggedIn);
+                    (!this.isAdmin && !this.isEditor && !this.isManager && this.isLoggedIn);
     
     if (this.isLoggedIn) {
       this.updateFavoriteCount();

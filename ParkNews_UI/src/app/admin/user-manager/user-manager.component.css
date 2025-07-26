@@ -454,6 +454,11 @@ input[readonly] {
   color: white;
 }
 
+.role-badge.role-manager {
+  background-color: #fd7e14;
+  color: white;
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .article-manager {

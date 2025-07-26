@@ -38,6 +38,7 @@ interface RecentActivity {
 export class DashboardComponent implements OnInit {
   currentUser: any = null;
   isAdmin = false;
+  isManager = false;
   
   adminSections: DashboardSection[] = [
     { name: 'Quản lý bài viết', route: '/admin/articles', icon: 'fa-newspaper', count: 0, loading: true },
@@ -49,6 +50,7 @@ export class DashboardComponent implements OnInit {
     { name: 'Quản lý tác giả', route: '/admin/authors', icon: 'fa-user-edit', count: 0, loading: true }
   ];
 
+  displaySections: DashboardSection[] = [];
   recentActivities: RecentActivity[] = [];
   loadingActivities = true;
 
@@ -67,21 +69,41 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
     this.isAdmin = localStorage.getItem('isAdmin') === 'true';
+    this.isManager = localStorage.getItem('isManager') === 'true';
     
-    // Check if user is logged in and has admin role
-    if (!this.currentUser || !this.isAdmin) {
+    // Check if user is logged in and has admin or manager role
+    if (!this.currentUser || (!this.isAdmin && !this.isManager)) {
       this.router.navigate(['/auth/login']);
       return;
     }
 
+    // Filter sections based on role
+    this.filterSectionsByRole();
     this.loadDashboardData();
+  }
+
+  filterSectionsByRole(): void {
+    if (this.isAdmin) {
+      // Admin only sees user management
+      this.displaySections = this.adminSections.filter(section => 
+        section.route === '/admin/users'
+      );
+    } else if (this.isManager) {
+      // Manager sees everything except user management
+      this.displaySections = this.adminSections.filter(section => 
+        section.route !== '/admin/users'
+      );
+    }
   }
 
   loadDashboardData(): void {
     // Load counts for each section
     this.articleService.getAll().subscribe(articles => {
-      this.adminSections[0].count = articles.length;
-      this.adminSections[0].loading = false;
+      const articleSection = this.adminSections.find(s => s.route === '/admin/articles');
+      if (articleSection) {
+        articleSection.count = articles.length;
+        articleSection.loading = false;
+      }
       
       // Add recent articles to activities
       const recentArticles = articles
@@ -100,23 +122,37 @@ export class DashboardComponent implements OnInit {
     });
 
     this.categoryService.getAll().subscribe(categories => {
-      this.adminSections[1].count = categories.length;
-      this.adminSections[1].loading = false;
+      const categorySection = this.adminSections.find(s => s.route === '/admin/categories');
+      if (categorySection) {
+        categorySection.count = categories.length;
+        categorySection.loading = false;
+      }
     });
 
     this.tagService.getAll().subscribe(tags => {
-      this.adminSections[2].count = tags.length;
-      this.adminSections[2].loading = false;
+      const tagSection = this.adminSections.find(s => s.route === '/admin/tags');
+      if (tagSection) {
+        tagSection.count = tags.length;
+        tagSection.loading = false;
+      }
     });
 
-    this.userService.getAll().subscribe(users => {
-      this.adminSections[3].count = users.length;
-      this.adminSections[3].loading = false;
-    });
+    if (this.isAdmin) {
+      this.userService.getAll().subscribe(users => {
+        const userSection = this.adminSections.find(s => s.route === '/admin/users');
+        if (userSection) {
+          userSection.count = users.length;
+          userSection.loading = false;
+        }
+      });
+    }
 
     this.commentService.getAll().subscribe((comments: CommentDTO[]) => {
-      this.adminSections[4].count = comments.length;
-      this.adminSections[4].loading = false;
+      const commentSection = this.adminSections.find(s => s.route === '/admin/comments');
+      if (commentSection) {
+        commentSection.count = comments.length;
+        commentSection.loading = false;
+      }
       
       // Add recent comments to activities
       const recentComments = comments
@@ -136,13 +172,19 @@ export class DashboardComponent implements OnInit {
     });
 
     this.sourceService.getAll().subscribe(sources => {
-      this.adminSections[5].count = sources.length;
-      this.adminSections[5].loading = false;
+      const sourceSection = this.adminSections.find(s => s.route === '/admin/sources');
+      if (sourceSection) {
+        sourceSection.count = sources.length;
+        sourceSection.loading = false;
+      }
     });
 
     this.authorService.getAll().subscribe(authors => {
-      this.adminSections[6].count = authors.length;
-      this.adminSections[6].loading = false;
+      const authorSection = this.adminSections.find(s => s.route === '/admin/authors');
+      if (authorSection) {
+        authorSection.count = authors.length;
+        authorSection.loading = false;
+      }
     });
     
     // Set loading to false after 3 seconds in case some API calls fail
@@ -169,6 +211,12 @@ export class DashboardComponent implements OnInit {
     } else {
       return 'User';
     }
+  }
+
+  getUserRole(): string {
+    if (this.isAdmin) return 'Admin';
+    if (this.isManager) return 'Manager';
+    return 'User';
   }
 
   navigateTo(route: string): void {
